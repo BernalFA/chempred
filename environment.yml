@@ -6,8 +6,15 @@ dependencies:
   - pip
   - black
   - flake8
+  - imbalanced-learn
   - isort
+  - matplotlib
+  - numpy
+  - openpyxl
+  - pandas
+  - rdkit
+  - scikit-learn
+  - scikit-mol
+  - tqdm
   - pip:
-    - python-dotenv
     - mkdocs
-    - -e .
