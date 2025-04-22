@@ -4,6 +4,7 @@ Module containing the Explorer class, which enabling perfoming exploratory exper
 @author: Dr. Freddy A. Bernal
 """
 
+from abc import ABC, abstractmethod
 from itertools import product
 
 import numpy as np
@@ -26,18 +27,19 @@ def _check_fitted(cls):
         raise NotFittedError("No fitted model available. Run evaluate() first.")
 
 
-class Explorer:
+class BaseExplorer(ABC):
     def __init__(
         self,
-        classifiers="all",
+        ml_algorithms="all",
         balancing_samplers="all",
         mol_transformers="all",
         preprocessing=True,  # automatically turned off if fingerprints
         random_state=21,
         n_jobs=1,
+        scoring=None,
     ):
+        self.ml_algorithms = ml_algorithms
         self.random_state = random_state
-        self.classifiers = classifiers
         self.balancing_samplers = balancing_samplers
         self.mol_transformers = mol_transformers
         self.preprocessing = preprocessing
@@ -45,16 +47,14 @@ class Explorer:
         self._data_pipelines = []
         self._steps = []
         self._set_estimators()
+        self._set_scoring_functions(scoring)
 
     def evaluate(self, X_train, X_test, y_train, y_test):
-        columns = [
-            "Classifier",
-            "Balancing method",
-            "Balanced Accuracy",
-            "F1 score",
-            "ROC AUC",
-            "Time",
-        ]
+        # define columns for resulting dataframe
+        columns = ["Algorithm", "Balancing method"]
+        columns.extend(self._named_scoring_functions)
+        columns.append("Time")
+
         if self.mol_transformers is not None:
             columns.insert(2, "Molecular Transformer")
             results = pd.DataFrame(columns=columns)
@@ -63,10 +63,11 @@ class Explorer:
                 X_train = mol_pipe.fit_transform(X_train)
                 X_test = mol_pipe.fit_transform(X_test)
 
-                for classifier, sampler in product(
-                    self.classifiers, self.balancing_samplers
+                for algorithm, sampler in product(
+                    self.ml_algorithms, self.balancing_samplers
                 ):
-                    self._last_config = SimpleConfig(classifier, sampler, transformer)
+                    self._last_config = SimpleConfig(algorithm, sampler, transformer)
+                    print(self._last_config)
                     if transformer[0] != "MolecularDescriptorTransformer":
                         self.preprocessing = False
 
@@ -79,19 +80,19 @@ class Explorer:
                         y_train,
                         y_test,
                     )
-                    res = [classifier[0], sampler[0], transformer[0]] + scores
+                    res = [algorithm[0], sampler[0], transformer[0]] + scores
                     results.loc[len(results)] = res
         else:
             results = pd.DataFrame(columns=columns)
-            for classifier, sampler in product(
-                self.classifiers, self.balancing_samplers
+            for algorithm, sampler in product(
+                self.ml_algorithms, self.balancing_samplers
             ):
-                self._last_config = SimpleConfig(classifier, sampler)
+                self._last_config = SimpleConfig(algorithm, sampler)
                 pipe = self._create_pipeline()
                 self._data_pipelines.append(pipe)
                 self._steps.append(pipe)
                 scores = self._run_evaluation(X_train, X_test, y_train, y_test)
-                res = [classifier[0], sampler[0]] + scores
+                res = [algorithm[0], sampler[0]] + scores
                 results.loc[len(results)] = res
 
         self.results_ = results
@@ -148,6 +149,68 @@ class Explorer:
             return model(**params)
         return model()
 
+    @abstractmethod
+    def _score_from_predictor(self, estimator, X, y):
+        # any number of scoring functions used. It returns results as an array
+        pass
+
+    def _get_steps(self, pipe1, pipe2):
+        return list(pipe1.named_steps.items()) + list(pipe2.named_steps.items())
+
+    def _select_best_model(self):
+        av = self.results_[self._named_scoring_functions].mean(axis=1)
+        self.best_index_ = av.sort_values(ascending=False).index[0]
+        steps = self._steps[self.best_index_]
+        self.best_estimator_ = Pipeline(steps)
+
+    @property
+    def best_score_(self):
+        best_score = self.results_.loc[self.best_index_, self._named_scoring_functions]
+        return best_score.to_dict()
+
+    def predict(self, X):
+        _check_fitted(self)
+        return self.best_estimator_.predict(X)
+
+    def score(self, X, y):
+        _check_fitted(self)
+        scores = self._score_from_predictor(self.best_estimator_, X, y)
+        return {
+            key: float(val) 
+            for key, val in zip(self._named_scoring_functions, scores)
+        }
+
+    @abstractmethod
+    def _set_estimators(self):
+        # Important to set up CLASSIFIERS or REGRESSORS
+        pass
+
+    def _set_custom_estimators(self, custom_methods, all_methods):
+        est_list = []
+        for method in custom_methods:
+            if self._check_implemented_estimator(method, all_methods):
+                est_tuple = (method.__name__, method)
+                est_list.append(est_tuple)
+            else:
+                raise NotImplementedError(f"{method=} not implemented.")
+        return est_list
+
+    def _check_implemented_estimator(self, estimator, implemented_estimators):
+        estimator_classes = [est[1] for est in implemented_estimators]
+        if estimator in estimator_classes:
+            return True
+        return False
+
+    @abstractmethod
+    def _set_scoring_functions(self, scoring):
+        if scoring is not None:
+            self._named_scoring_functions = scoring
+        else:
+            pass
+
+
+class ClassificationExplorer(BaseExplorer):
+
     def _score_from_predictor(self, estimator, X, y):
         y_pred = estimator.predict(X)
         ba = balanced_accuracy_score(y, y_pred)
@@ -162,51 +225,15 @@ class Explorer:
             probs = estimator.decision_function(X)
         return roc_auc_score(y, probs)
 
-    @property
-    def best_score_(self):
-        cols = ["Balanced Accuracy", "F1 score", "ROC AUC"]
-        best_score = self.results_.loc[self.best_index_, cols]
-        return best_score.to_dict()
-
-    def predict(self, X):
-        _check_fitted(self)
-        return self.best_estimator_.predict(X)
-
-    def score(self, X, y):
-        _check_fitted(self)
-        cols = ["Balanced Accuracy", "F1 score", "ROC AUC"]
-        scores = self._score_from_predictor(self.best_estimator_, X, y)
-        return {key: float(val) for key, val in zip(cols, scores)}
-
-    def _select_best_model(self):
-        cols = ["Balanced Accuracy", "F1 score", "ROC AUC"]
-        av = self.results_[cols].mean(axis=1)
-        self.best_index_ = av.sort_values(ascending=False).index[0]
-        steps = self._steps[self.best_index_]
-        self.best_estimator_ = Pipeline(steps)
-
-    def _check_implemented_estimator(self, estimator, implemented_estimators):
-        estimator_classes = [est[1] for est in implemented_estimators]
-        if estimator in estimator_classes:
-            return True
-        return False
-
-    def _get_steps(self, pipe1, pipe2):
-        return list(pipe1.named_steps.items()) + list(pipe2.named_steps.items())
-
-    def _set_custom_estimators(self, custom_methods, all_methods):
-        est_list = []
-        for method in custom_methods:
-            if self._check_implemented_estimator(method, all_methods):
-                est_tuple = (method.__name__, method)
-                est_list.append(est_tuple)
-            else:
-                raise NotImplementedError(f"{method=} not implemented.")
-        return est_list
+    def _set_scoring_functions(self, scoring):
+        if scoring is not None:
+            self._named_scoring_functions = scoring
+        else:
+            self._named_scoring_functions = ["Balanced Accuracy", "F1 score", "ROC AUC"]
 
     def _set_estimators(self):
-        methods = [self.classifiers, self.balancing_samplers, self.mol_transformers]
-        names = ["classifiers", "balancing_samplers", "mol_transformers"]
+        methods = [self.ml_algorithms, self.balancing_samplers, self.mol_transformers]
+        names = ["ml_algorithms", "balancing_samplers", "mol_transformers"]
         full_lists = [CLASSIFIERS, SAMPLING_METHODS, MOL_TRANSFORMERS]
         for method, name, full_list in zip(methods, names, full_lists):
             if method == "all":
