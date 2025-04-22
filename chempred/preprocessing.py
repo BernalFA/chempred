@@ -1,12 +1,12 @@
 """
-Sklearn compatible transformer for removal of correlated features up to defined
-threshold.
+Sklearn compatible transformers for removal of correlated features up to defined
+threshold and removal of missing values.
 
 @author: Dr. Freddy A. Bernal
 """
 
 import numpy as np
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_selection import SelectorMixin
 from sklearn.utils.validation import check_is_fitted
 
@@ -44,3 +44,28 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
         self.correlations_ = np.corrcoef(X, rowvar=False)
 
         return self
+
+
+class MissingValuesRemover(TransformerMixin, BaseEstimator):
+    def __init__(self, threshold=0.2):
+        self.threshold = threshold
+
+    def fit(self, X, y=None):
+        # Define n_features and training samples
+        self.n_features_in_ = X.shape[1]
+        self.n_train_samples_ = X.shape[0]
+        # Define NaNs in training data (features instead of compounds)
+        self.is_nan = np.isnan(X).any(axis=0)
+
+        return self
+
+    def transform(self, X):
+        # Check fitted as used by sklearn e.g. in VarianceThreshold class
+        check_is_fitted(self)
+        # define mask
+        X = X[:, ~self.is_nan]
+        # in case of test data, check for additional missing values
+        if X.shape[0] != self.n_train_samples_:
+            mask = np.isnan(X).any(axis=1)
+            X = X[~mask]
+        return X
