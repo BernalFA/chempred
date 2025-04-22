@@ -5,7 +5,7 @@ Module containing the Explorer class, which enabling perfoming exploratory exper
 """
 
 from abc import ABC, abstractmethod
-from itertools import product
+# from itertools import product
 
 import numpy as np
 import pandas as pd
@@ -16,6 +16,8 @@ from sklearn.exceptions import NotFittedError
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.metrics import balanced_accuracy_score, f1_score, roc_auc_score
 from sklearn.preprocessing import StandardScaler
+from tqdm import tqdm
+from tqdm.contrib.itertools import product
 
 from config import CLASSIFIERS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig
 from preprocessing import RemoveCorrelated
@@ -58,16 +60,18 @@ class BaseExplorer(ABC):
         if self.mol_transformers is not None:
             columns.insert(2, "Molecular Transformer")
             results = pd.DataFrame(columns=columns)
-            for transformer in self.mol_transformers:
+            for transformer in tqdm(self.mol_transformers,
+                                    desc="Featurization:"):
                 mol_pipe = self._create_pipeline(transformer)
-                X_train = mol_pipe.fit_transform(X_train)
-                X_test = mol_pipe.fit_transform(X_test)
+                X_train_trans = mol_pipe.fit_transform(X_train)
+                X_test_trans = mol_pipe.fit_transform(X_test)
 
                 for algorithm, sampler in product(
-                    self.ml_algorithms, self.balancing_samplers
+                    self.ml_algorithms, self.balancing_samplers,
+                    desc="Models", position=1, leave=False
                 ):
                     self._last_config = SimpleConfig(algorithm, sampler, transformer)
-                    print(self._last_config)
+                    # print(self._last_config)
                     if transformer[0] != "MolecularDescriptorTransformer":
                         self.preprocessing = False
 
@@ -75,8 +79,8 @@ class BaseExplorer(ABC):
                     self._data_pipelines.append(pipe)
                     self._steps.append(self._get_steps(mol_pipe, pipe))
                     scores = self._run_evaluation(
-                        X_train,
-                        X_test,
+                        X_train_trans,
+                        X_test_trans,
                         y_train,
                         y_test,
                     )
@@ -85,7 +89,8 @@ class BaseExplorer(ABC):
         else:
             results = pd.DataFrame(columns=columns)
             for algorithm, sampler in product(
-                self.ml_algorithms, self.balancing_samplers
+                self.ml_algorithms, self.balancing_samplers,
+                desc="Models", position=1, leave=False
             ):
                 self._last_config = SimpleConfig(algorithm, sampler)
                 pipe = self._create_pipeline()
