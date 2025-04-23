@@ -56,16 +56,19 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
         self.n_train_samples_ = X.shape[0]
         # Define NaNs in training data (features instead of compounds)
         self.is_nan = np.isnan(X).any(axis=0)
+        # Define Inf in training data (features instead of compounds)
+        self.is_inf = np.isinf(X).any(axis=0)
 
         return self
 
     def transform(self, X):
         # Check fitted as used by sklearn e.g. in VarianceThreshold class
         check_is_fitted(self)
-        # define mask
-        X = X[:, ~self.is_nan]
+        # Remove NaN and Inf
+        X = X[:, (~self.is_nan) & (~self.is_inf)]
         # in case of test data, check for additional missing values
         if X.shape[0] != self.n_train_samples_:
-            mask = np.isnan(X).any(axis=1)
-            X = X[~mask]
+            mask1 = np.isnan(X).any(axis=1)
+            mask2 = np.isinf(X).any(axis=1)
+            X = X[(~mask1) & (~mask2)]
         return X
