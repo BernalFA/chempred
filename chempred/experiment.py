@@ -543,6 +543,6 @@ class ClassificationExplorer(BaseExplorer):
             attr["n_jobs"] = self.n_jobs
         scores = ["Balanced Accuracy", "F1 score", "ROC AUC"]
         if self._named_scoring_functions != scores:
-            attr["score"] = self._named_scoring_functions
+            attr["scoring"] = self._named_scoring_functions
 
         return attr if attr else None
