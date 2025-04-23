@@ -213,9 +213,9 @@ class BaseExplorer(ABC):
         """
         return list(pipe1.named_steps.items()) + list(pipe2.named_steps.items())
 
-    def _select_best_model(self):
+    def _select_best_pipeline(self):
         """Define best model using the obtained performance evaluation. Results are
-        stored as the attributes best_index_ and best_estimator_ 
+        stored as the attributes best_index_ and best_estimator_
         """
         av = self.results_[self._named_scoring_functions].mean(axis=1)
         self.best_index_ = av.sort_values(ascending=False).index[0]
@@ -436,7 +436,7 @@ class ClassificationExplorer(BaseExplorer):
 
         # store results and select best performing pipeline
         self.results_ = results
-        self._select_best_model()
+        self._select_best_pipeline()
         # delete attribute '_last_config'
         if hasattr(self, "_last_config"):
             delattr(self, "_last_config")
