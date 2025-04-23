@@ -20,7 +20,7 @@ from tqdm import tqdm
 from tqdm.contrib.itertools import product
 
 from config import CLASSIFIERS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig
-from preprocessing import RemoveCorrelated
+from preprocessing import RemoveCorrelated, MissingValuesRemover
 from utils import add_timing
 
 
@@ -137,6 +137,7 @@ class BaseExplorer(ABC):
                 )
             if self.preprocessing:
                 preprocess = [
+                    ("MissingValuesRemover", MissingValuesRemover()),
                     ("RemoveCorrelated", RemoveCorrelated()),
                     ("VarianceThreshold", VarianceThreshold()),
                     ("StandardScaler", StandardScaler()),
