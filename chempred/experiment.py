@@ -1,5 +1,5 @@
 """
-Module containing the Explorer class, which enabling perfoming exploratory experiments.
+Module containing the Explorer class, which enables perfoming exploratory experiments.
 
 @author: Dr. Freddy A. Bernal
 """
@@ -43,7 +43,7 @@ def _check_fitted(cls: Callable):
 
 
 class BaseExplorer(ABC):
-    """Abstract class for exploration. The central method 'evalaute' is defined here."""
+    """Abstract class for exploration. The central method 'evaluate' is defined here."""
 
     def __init__(
         self,
@@ -54,6 +54,22 @@ class BaseExplorer(ABC):
         n_jobs: int = 1,
         scoring: Optional[list] = None,
     ):
+        """
+        Args:
+            ml_algorithms (list | 'all', optional): ML algorithms to include in
+                    exploration. Defaults to "all" (include all the implemented models).
+            mol_transformers (list | 'all' | None, optional): molecular transformers
+                    to include in exploration. Defaults to "all" (include all the
+                    implemented transformers).
+            preprocessing (bool, optional): if True, a data preprocessing pipeline will
+                    be applied before training the model. Defaults to True. Only
+                    applicable for molecular descriptors.
+            n_jobs (int, optional): number of cpu units for pipeline processing (used
+                    on algorithms that allows multiprocessing). Defaults to 1.
+            scoring (list | None, optional): names given to the scoring functions
+                    used during evaluation. Defaults to None to assign default names.
+        """
+
         self.ml_algorithms = ml_algorithms
         self.random_state = random_state
         self.mol_transformers = mol_transformers
@@ -66,24 +82,57 @@ class BaseExplorer(ABC):
 
     @abstractmethod
     def evaluate(self, X_train, X_test, y_train, y_test):
+        """Central method for automatic evaluation of multiple pipelines"""
         # define columns for resulting dataframe
         # define evaluation loop
         pass
 
     @add_timing
-    def _run_evaluation(self, X_train, X_test, y_train, y_test):
+    def _run_evaluation(
+        self,
+        X_train: npt.ArrayLike,
+        X_test: npt.ArrayLike,
+        y_train: npt.ArrayLike,
+        y_test: npt.ArrayLike
+    ) -> np.ndarray:
+
+        """Fit pipeline on training data and calculate performance on test data.
+
+        Args:
+            X_train (npt.ArrayLike): training data or smiles
+            X_test (npt.ArrayLike): test data or smiles
+            y_train (npt.ArrayLike): training labels/target
+            y_test (npt.ArrayLike): test labels/target
+
+        Returns:
+            np.ndarray: performance scores on test data
+        """
         pipe = self._data_pipelines[-1]
         pipe.fit(X_train, y_train)
         scores = self._score_from_predictor(pipe, X_test, y_test)
         return scores
 
     def _create_pipeline(self, transformer: Optional[list] = None) -> Pipeline:
+        """Systematically create a transformation pipeline or a data processing and ML
+        training pipeline.
+
+        Args:
+            transformer (list | None, optional): molecular transformer to use after
+                    smiles to mol transformation and standardization. If given, it will
+                    exclusively create a pipeline for molecular transformation.
+                    Defaults to None to consider data preprocessing and modeling only.
+
+        Returns:
+            Pipeline: instantiated imblearn/sklearn pipeline
+        """
+        # if molecular transformer given, create transformer pipeline
         if transformer is not None:
             steps = [
                 ("SmilesToMolTransformer", SmilesToMolTransformer()),
                 ("Standardizer", Standardizer()),
                 (transformer[0], transformer[1]()),
             ]
+        # if not molecular transformer, create ML pipeline
         else:
             steps = [
                 (
@@ -110,39 +159,87 @@ class BaseExplorer(ABC):
 
         return Pipeline(steps=steps)
 
-    def _instantiate_estimator(self, model):
+    def _instantiate_estimator(self, estimator):
+        """Instantiate given estimator after setting up 'random_state' and 'n_jobs' if
+        possible (depending on whether the implementation uses them).
+
+        Args:
+            estimator: sklearn, imblearn or scikit-mol estimator
+
+        Returns:
+            instantiated estimator
+        """
         params = {}
-        if "random_state" in model().get_params().keys():
+        if "random_state" in estimator().get_params().keys():
             params["random_state"] = self.random_state
-        if "n_jobs" in model().get_params().keys():
+        if "n_jobs" in estimator().get_params().keys():
             params["n_jobs"] = self.n_jobs
-            return model(**params)
-        return model()
+            return estimator(**params)
+        return estimator()
 
     @abstractmethod
     def _score_from_predictor(self, estimator, X, y):
+        """Required implementation for performance assessment"""
         # any number of scoring functions used. It returns results as an array
         pass
 
-    def _get_steps(self, pipe1, pipe2):
+    def _get_steps(self, pipe1: Pipeline, pipe2: Pipeline) -> list[tuple]:
+        """Unify steps of the pipelines for molecular transformation and data processing
+        and training.
+
+        Args:
+            pipe1 (Pipeline): molecular transformation pipeline.
+            pipe2 (Pipeline): ML training pipeline.
+
+        Returns:
+            list[tuple]: full sequence of steps followed.
+        """
         return list(pipe1.named_steps.items()) + list(pipe2.named_steps.items())
 
     def _select_best_model(self):
+        """Define best model using the obtained performance evaluation. Results are
+        stored as the attributes best_index_ and best_estimator_ 
+        """
         av = self.results_[self._named_scoring_functions].mean(axis=1)
         self.best_index_ = av.sort_values(ascending=False).index[0]
         steps = self._steps[self.best_index_]
         self.best_estimator_ = Pipeline(steps)
 
     @property
-    def best_score_(self):
+    def best_score_(self) -> dict:
+        """Locate the scores of the best pipeline (using best_index_ as defined in
+        _select_best_model)
+
+        Returns:
+            dict: test scores obtained for the best pipeline
+        """
         best_score = self.results_.loc[self.best_index_, self._named_scoring_functions]
         return best_score.to_dict()
 
-    def predict(self, X):
+    def predict(self, X: npt.ArrayLike) -> np.ndarray:
+        """Predict label/target value for given dataset X using the best pipeline from
+        the evaluate() method.
+
+        Args:
+            X (npt.ArrayLike): dataset for prediction (smiles or features).
+
+        Returns:
+            np.ndarray: predicted target values / labels
+        """
         _check_fitted(self)
         return self.best_estimator_.predict(X)
 
-    def score(self, X, y):
+    def score(self, X: npt.ArrayLike, y: npt.ArrayLike) -> dict:
+        """Evaluate the prediction performance of the best pipeline on the target
+        value (y) for the given dataset (X).
+
+        Args:
+            X (npt.ArrayLike): dataset for prediction (smiles or features).
+            y (npt.ArrayLike): target values / labels.
+
+        Returns:
+            dict: set of scores to assess performance of predictions.
+        """
         _check_fitted(self)
         scores = self._score_from_predictor(self.best_estimator_, X, y)
         return {
@@ -152,10 +249,27 @@ class BaseExplorer(ABC):
 
     @abstractmethod
     def _set_estimators(self):
+        """Check provided estimators or assign 'all' estimators available"""
         # Important to set up CLASSIFIERS or REGRESSORS
         pass
 
-    def _set_custom_estimators(self, custom_methods, all_methods):
+    def _set_custom_estimators(self, custom_methods: list, all_methods: list) -> list:
+        """Iterate over custom_methods to assess whether the given estimator/method is
+        implemented.
+
+        Args:
+            custom_methods (list): method to use in exploration
+                                   (e.g. [RandomForestClassifier])
+            all_methods (list): available estimators as defined in config.py
+                                (e.g. CLASSIFIERS)
+
+        Raises:
+            NotImplementedError: raise an error if any of the provided custom_methods
+                                 is not yet implemented in the Explorer.
+
+        Returns:
+            list: given estimators as tuples (name, estimator)
+        """
         est_list = []
         for method in custom_methods:
             if self._check_implemented_estimator(method, all_methods):
@@ -166,6 +280,11 @@ class BaseExplorer(ABC):
         return est_list
 
     def _check_implemented_estimator(self, estimator, implemented_estimators):
+        """Verify estimator is included within implemented estimators in config.py
+
+        Returns:
+            bool: True if estimator is implemented
+        """
         estimator_classes = [est[1] for est in implemented_estimators]
         if estimator in estimator_classes:
             return True
@@ -173,6 +292,7 @@ class BaseExplorer(ABC):
 
     @abstractmethod
     def _set_scoring_functions(self, scoring: Optional[list]):
+        """Define the names used for the scoring functions when showing results"""
         if scoring is not None:
             self._named_scoring_functions = scoring
         else:
@@ -180,6 +300,21 @@ class BaseExplorer(ABC):
 
 
 class ClassificationExplorer(BaseExplorer):
+    """Facilitate training and performance assessment of a series of automatically
+    created pipelines, combining molecular transformations implemented in rdkit and
+    provided in scikit-mol, class imbalance sampling techniques implemented in imblearn,
+    and machine learning methods implemented in sklearn. Each pipeline is evaluated for
+    predictive performance on a separate dataset (test set) using three different
+    metrics commonly used in classification problems (balanced accuracy, F1 score, and
+    ROC AUC). Afterward, the best performing pipeline (considering an average of the
+    calculated metrics) is made available for prediction of labels on unseen molecular
+    structures. Scoring on specified datasets is also possible (further evaluation).
+
+    The current implementation uses default values for all the estimators considered,
+    except for 'random_state' and 'n_jobs' that can be configured upon instance
+    definition.
+    """
+
     def __init__(
             self,
             ml_algorithms: Union[list, Literal["all"]] = "all",
@@ -190,6 +325,24 @@ class ClassificationExplorer(BaseExplorer):
             n_jobs: int = 1,
             scoring: Optional[list] = None,
     ):
+        """
+        Args:
+            ml_algorithms (list | "all", optional): ML algorithms to include in
+                    exploration. Defaults to "all" (include all the implemented models).
+            balancing_samplers (list | 'all' | None, optional): data samplers for class
+                    imbalance treatment. Defaults to "all" (include all the implemented
+                    samplers).
+            mol_transformers (list | 'all' | None, optional): molecular transformers
+                    to include in exploration. Defaults to "all" (include all the
+                    implemented transformers).
+            preprocessing (bool, optional): if True, a data preprocessing pipeline will
+                    be applied before training the model. Defaults to True. Only
+                    applicable for molecular descriptors.
+            n_jobs (int, optional): number of cpu units for pipeline processing (used
+                    on algorithms that allows multiprocessing). Defaults to 1.
+            scoring (list | None, optional): names given to the scoring functions
+                    used during evaluation. Defaults to None to assign default names.
+        """
         super().__init__(
             ml_algorithms=ml_algorithms,
             mol_transformers=mol_transformers,
@@ -201,7 +354,26 @@ class ClassificationExplorer(BaseExplorer):
         self.balancing_samplers = balancing_samplers
         self._set_estimators()
 
-    def evaluate(self, X_train, X_test, y_train, y_test):
+    def evaluate(
+            self,
+            X_train: npt.ArrayLike,
+            X_test: npt.ArrayLike,
+            y_train: npt.ArrayLike,
+            y_test: npt.ArrayLike
+    ):
+        """Sequentially create and train pipelines with the training dataset, and assess
+        performance using the test dataset. During execution, attributes _data_pipelines
+        (containing all the created pipelines for data preprocessing and ML modeling)
+        and _steps (containing the steps for the full pipeline including molecular
+        transformations) are created. After iteration, the best pipeline is chosen,
+        making available the attributes best_estimator_ and best_index_.
+
+        Args:
+            X_train (npt.ArrayLike): training smiles / features
+            X_test (npt.ArrayLike): test smiles / features
+            y_train (npt.ArrayLike): training labels
+            y_test (npt.ArrayLike): test labels
+        """
         # define columns for resulting dataframe
         columns = ["Algorithm", "Balancing method"]
         columns.extend(self._named_scoring_functions)
@@ -256,27 +428,67 @@ class ClassificationExplorer(BaseExplorer):
         if hasattr(self, "_last_config"):
             delattr(self, "_last_config")
 
-    def _score_from_predictor(self, estimator, X, y):
+    def _score_from_predictor(
+            self,
+            estimator: Pipeline,
+            X: npt.ArrayLike,
+            y: npt.ArrayLike
+    ) -> np.ndarray:
+        """Assess performance of given estimator on the provided dataset using balanced
+        accuracy, F1 score, and ROC AUC.
+
+        Args:
+            estimator (Pipeline): pipeline containing an ML model
+            X (npt.ArrayLike): features
+            y (npt.ArrayLike): labels
+
+        Returns:
+            np.ndarray: performance scores
+        """
         y_pred = estimator.predict(X)
         ba = balanced_accuracy_score(y, y_pred)
         f1 = f1_score(y, y_pred)
         auc = self._roc_auc(estimator, X, y)
         return np.array([ba, f1, auc])
 
-    def _roc_auc(self, estimator, X, y):
+    def _roc_auc(
+            self,
+            estimator: Pipeline,
+            X: npt.ArrayLike,
+            y: npt.ArrayLike
+    ) -> float:
+        """Calculate ROC AUC for dataset using the given estimator.
+
+        Args:
+            estimator (Pipeline): pipeline containing an ML model.
+            X (npt.ArrayLike): features.
+            y (npt.ArrayLike): labels.
+
+        Returns:
+            float: ROC AUC value
+        """
         try:
             probs = estimator.predict_proba(X)[:, 1]
         except AttributeError:
             probs = estimator.decision_function(X)
         return roc_auc_score(y, probs)
 
-    def _set_scoring_functions(self, scoring):
+    def _set_scoring_functions(self, scoring: Optional[list]):
+        """Help to define names for scoring functions (as will appear on results).
+
+        Args:
+            scoring (list | None): names for scoring functions. If None, the default
+                                   names will be used.
+        """
         if scoring is not None:
             self._named_scoring_functions = scoring
         else:
             self._named_scoring_functions = ["Balanced Accuracy", "F1 score", "ROC AUC"]
 
     def _set_estimators(self):
+        """Help to set all estimators from user input (attributes ml_algorithms,
+        balancing_samplers, and mol_transformers set using required format).
+        """
         methods = [self.ml_algorithms, self.balancing_samplers, self.mol_transformers]
         names = ["ml_algorithms", "balancing_samplers", "mol_transformers"]
         full_lists = [CLASSIFIERS, SAMPLING_METHODS, MOL_TRANSFORMERS]
@@ -304,6 +516,12 @@ class ClassificationExplorer(BaseExplorer):
         return f"{name}({attr_str})"
 
     def _get_attributes(self) -> Optional[dict]:
+        """Help to get custom attributes on defined instance to use in __str__
+
+        Returns:
+            Optional[dict]: attributes as key:value pairs if custom attributes. None is
+            returned when all attributes are set as default.
+        """
         attr = {}
         if self.ml_algorithms != CLASSIFIERS:
             attr["ml_algorithms"] = [est[1] for est in self.ml_algorithms]
@@ -317,7 +535,8 @@ class ClassificationExplorer(BaseExplorer):
             attr["random_state"] = self.random_state
         if self.n_jobs != 1:
             attr["n_jobs"] = self.n_jobs
-        if self._named_scoring_functions != ["Balanced Accuracy", "F1 score", "ROC AUC"]:
+        scores = ["Balanced Accuracy", "F1 score", "ROC AUC"]
+        if self._named_scoring_functions != scores:
             attr["score"] = self._named_scoring_functions
 
         return attr if attr else None
