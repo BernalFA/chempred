@@ -5,9 +5,12 @@ Module containing the Explorer class, which enabling perfoming exploratory exper
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
+from typing import Union, Literal, Optional
 # from itertools import product
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from imblearn.pipeline import Pipeline
 from scikit_mol.conversions import SmilesToMolTransformer
@@ -24,21 +27,33 @@ from preprocessing import RemoveCorrelated, MissingValuesRemover
 from utils import add_timing
 
 
-def _check_fitted(cls):
+def _check_fitted(cls: Callable):
+    """Simple helper to check the Explorer is fitted before calling predict or score
+
+    Args:
+        cls (Callable): class derived from BaseExplorer
+
+    Raises:
+        NotFittedError: if Explorer has not run yet evaluate() method when calling
+                        predict or score on additional data.
+    """
+
     if not hasattr(cls, "best_index_"):
         raise NotFittedError("No fitted model available. Run evaluate() first.")
 
 
 class BaseExplorer(ABC):
+    """Abstract class for exploration. The central method 'evalaute' is defined here."""
+
     def __init__(
         self,
-        ml_algorithms="all",
-        balancing_samplers="all",
-        mol_transformers="all",
-        preprocessing=True,  # automatically turned off if fingerprints
-        random_state=21,
-        n_jobs=1,
-        scoring=None,
+        ml_algorithms: Union[list, Literal["all"]] = "all",
+        balancing_samplers: Optional[Union[list, Literal["all"]]] = "all",
+        mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
+        preprocessing: bool = True,  # automatically turned off if fingerprints
+        random_state: int = 21,
+        n_jobs: int = 1,
+        scoring: Optional[list] = None,
     ):
         self.ml_algorithms = ml_algorithms
         self.random_state = random_state
@@ -113,7 +128,7 @@ class BaseExplorer(ABC):
         scores = self._score_from_predictor(pipe, X_test, y_test)
         return scores
 
-    def _create_pipeline(self, transformer=None):
+    def _create_pipeline(self, transformer: Optional[list] = None) -> Pipeline:
         if transformer is not None:
             steps = [
                 ("SmilesToMolTransformer", SmilesToMolTransformer()),
@@ -182,7 +197,7 @@ class BaseExplorer(ABC):
         _check_fitted(self)
         scores = self._score_from_predictor(self.best_estimator_, X, y)
         return {
-            key: float(val) 
+            key: float(val)
             for key, val in zip(self._named_scoring_functions, scores)
         }
 
@@ -208,7 +223,7 @@ class BaseExplorer(ABC):
         return False
 
     @abstractmethod
-    def _set_scoring_functions(self, scoring):
+    def _set_scoring_functions(self, scoring: Optional[list]):
         if scoring is not None:
             self._named_scoring_functions = scoring
         else:
@@ -218,13 +233,13 @@ class BaseExplorer(ABC):
 class ClassificationExplorer(BaseExplorer):
     def __init__(
             self,
-            ml_algorithms="all",
-            balancing_samplers="all",
-            mol_transformers="all",
-            preprocessing=True,
-            random_state=21,
-            n_jobs=1,
-            scoring=None
+            ml_algorithms: Union[list, Literal["all"]] = "all",
+            balancing_samplers: Optional[Union[list, Literal["all"]]] = "all",
+            mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
+            preprocessing: bool = True,  # automatically turned off if fingerprints
+            random_state: int = 21,
+            n_jobs: int = 1,
+            scoring: Optional[list] = None,
     ):
         super().__init__(
             ml_algorithms=ml_algorithms,
@@ -283,7 +298,7 @@ class ClassificationExplorer(BaseExplorer):
             attr_str = ""
         return f"{name}({attr_str})"
 
-    def _get_attributes(self):
+    def _get_attributes(self) -> Optional[dict]:
         attr = {}
         if self.ml_algorithms != CLASSIFIERS:
             attr["ml_algorithms"] = [est[1] for est in self.ml_algorithms]

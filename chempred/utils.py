@@ -13,6 +13,7 @@ import time
 from functools import wraps
 from importlib import import_module
 from operator import itemgetter
+from typing import Literal
 
 
 PATH = site.getsitepackages()[0]
@@ -22,7 +23,7 @@ _MODULE_TO_IGNORE = ["tests", "base", "plotting"]
 
 
 def add_timing(func):
-    """Decorator to add time execution measurements to results from func"""
+    """Decorator to add execution time measurements to results from func"""
 
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -35,8 +36,19 @@ def add_timing(func):
     return wrapper
 
 
-def all_estimators_in_package(package):
-    # adapted from sklearn all_estimators function
+def all_estimators_in_package(
+        package: Literal["scikit_mol", "imblearn"]
+) -> list[tuple]:
+    """Search estimators available in specified package. The package must be installed
+    in the environment/python distribution running the module. This function is adapted
+    from sklearn all_estimators function.
+
+    Args:
+        package (Literal["scikit_mol", "imblearn"]): package name
+
+    Returns:
+        list[tuple]: available estimators in package as tuples (name, estimator).
+    """
 
     def is_abstract(c):
         if not hasattr(c, "__abstractmethods__"):
@@ -73,7 +85,18 @@ def all_estimators_in_package(package):
     return sorted(set(estimators), key=itemgetter(0))
 
 
-def filter_classes(all_classes, pkg):
+def filter_classes(all_classes: list[tuple], pkg: str) -> list[tuple]:
+    """remove unnecessary classes from general list of available classes according to
+    key inheritance (based on the package itself).
+
+    Args:
+        all_classes (list[tuple]): full list of classes in package
+        pkg (str): package name
+
+    Returns:
+        list[tuple]: filtered list of classes of interest
+    """
+
     if pkg == "imblearn":
         from imblearn.base import BaseSampler
 

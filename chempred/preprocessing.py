@@ -47,8 +47,12 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
 
 
 class MissingValuesRemover(TransformerMixin, BaseEstimator):
-    def __init__(self, threshold=0.2):
-        self.threshold = threshold
+    """Sklearn compatible transformer to remove features containing missing or infinite
+    values.
+    """
+
+    def __init__(self, threshold: float = 0.2):
+        self.threshold = threshold  # For future implementation based on threshold
 
     def fit(self, X, y=None):
         # Define n_features and training samples
