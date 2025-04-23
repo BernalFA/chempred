@@ -408,6 +408,8 @@ class ClassificationExplorer(BaseExplorer):
                     # print(self._last_config)
                     if transformer[0] != "MolecularDescriptorTransformer":
                         self.preprocessing = False
+                    else:
+                        self.preprocessing = True
 
                     pipe = self._create_pipeline()
                     self._data_pipelines.append(pipe)
