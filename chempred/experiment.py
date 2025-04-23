@@ -48,7 +48,6 @@ class BaseExplorer(ABC):
     def __init__(
         self,
         ml_algorithms: Union[list, Literal["all"]] = "all",
-        balancing_samplers: Optional[Union[list, Literal["all"]]] = "all",
         mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
         preprocessing: bool = True,  # automatically turned off if fingerprints
         random_state: int = 21,
@@ -57,69 +56,19 @@ class BaseExplorer(ABC):
     ):
         self.ml_algorithms = ml_algorithms
         self.random_state = random_state
-        self.balancing_samplers = balancing_samplers
         self.mol_transformers = mol_transformers
         self.preprocessing = preprocessing
         self.n_jobs = n_jobs
         self._data_pipelines = []
         self._steps = []
-        self._set_estimators()
+        # self._set_estimators() TO SET UP IN SUBCLASS
         self._set_scoring_functions(scoring)
 
+    @abstractmethod
     def evaluate(self, X_train, X_test, y_train, y_test):
         # define columns for resulting dataframe
-        columns = ["Algorithm", "Balancing method"]
-        columns.extend(self._named_scoring_functions)
-        columns.append("Time")
-
-        if self.mol_transformers is not None:
-            columns.insert(2, "Molecular Transformer")
-            results = pd.DataFrame(columns=columns)
-            for transformer in tqdm(self.mol_transformers,
-                                    desc="Featurization:"):
-                mol_pipe = self._create_pipeline(transformer)
-                X_train_trans = mol_pipe.fit_transform(X_train)
-                X_test_trans = mol_pipe.fit_transform(X_test)
-
-                for algorithm, sampler in product(
-                    self.ml_algorithms, self.balancing_samplers,
-                    desc="Models", position=1, leave=False
-                ):
-                    self._last_config = SimpleConfig(algorithm, sampler, transformer)
-                    # print(self._last_config)
-                    if transformer[0] != "MolecularDescriptorTransformer":
-                        self.preprocessing = False
-
-                    pipe = self._create_pipeline()
-                    self._data_pipelines.append(pipe)
-                    self._steps.append(self._get_steps(mol_pipe, pipe))
-                    scores = self._run_evaluation(
-                        X_train_trans,
-                        X_test_trans,
-                        y_train,
-                        y_test,
-                    )
-                    res = [algorithm[0], sampler[0], transformer[0]] + scores
-                    results.loc[len(results)] = res
-        else:
-            results = pd.DataFrame(columns=columns)
-            for algorithm, sampler in product(
-                self.ml_algorithms, self.balancing_samplers,
-                desc="Models", position=1, leave=False
-            ):
-                self._last_config = SimpleConfig(algorithm, sampler)
-                pipe = self._create_pipeline()
-                self._data_pipelines.append(pipe)
-                self._steps.append(pipe)
-                scores = self._run_evaluation(X_train, X_test, y_train, y_test)
-                res = [algorithm[0], sampler[0]] + scores
-                results.loc[len(results)] = res
-
-        self.results_ = results
-        self._select_best_model()
-
-        if hasattr(self, "_last_config"):
-            delattr(self, "_last_config")
+        # define evaluation loop
+        pass
 
     @add_timing
     def _run_evaluation(self, X_train, X_test, y_train, y_test):
@@ -243,13 +192,69 @@ class ClassificationExplorer(BaseExplorer):
     ):
         super().__init__(
             ml_algorithms=ml_algorithms,
-            balancing_samplers=balancing_samplers,
             mol_transformers=mol_transformers,
             preprocessing=preprocessing,
             random_state=random_state,
             n_jobs=n_jobs,
             scoring=scoring
         )
+        self.balancing_samplers = balancing_samplers
+        self._set_estimators()
+
+    def evaluate(self, X_train, X_test, y_train, y_test):
+        # define columns for resulting dataframe
+        columns = ["Algorithm", "Balancing method"]
+        columns.extend(self._named_scoring_functions)
+        columns.append("Time")
+
+        if self.mol_transformers is not None:
+            columns.insert(2, "Molecular Transformer")
+            results = pd.DataFrame(columns=columns)
+            for transformer in tqdm(self.mol_transformers,
+                                    desc="Featurization:"):
+                mol_pipe = self._create_pipeline(transformer)
+                X_train_trans = mol_pipe.fit_transform(X_train)
+                X_test_trans = mol_pipe.fit_transform(X_test)
+
+                for algorithm, sampler in product(
+                    self.ml_algorithms, self.balancing_samplers,
+                    desc="Models", position=1, leave=False
+                ):
+                    self._last_config = SimpleConfig(algorithm, sampler, transformer)
+                    # print(self._last_config)
+                    if transformer[0] != "MolecularDescriptorTransformer":
+                        self.preprocessing = False
+
+                    pipe = self._create_pipeline()
+                    self._data_pipelines.append(pipe)
+                    self._steps.append(self._get_steps(mol_pipe, pipe))
+                    scores = self._run_evaluation(
+                        X_train_trans,
+                        X_test_trans,
+                        y_train,
+                        y_test,
+                    )
+                    res = [algorithm[0], sampler[0], transformer[0]] + scores
+                    results.loc[len(results)] = res
+        else:
+            results = pd.DataFrame(columns=columns)
+            for algorithm, sampler in product(
+                self.ml_algorithms, self.balancing_samplers,
+                desc="Models", position=1, leave=False
+            ):
+                self._last_config = SimpleConfig(algorithm, sampler)
+                pipe = self._create_pipeline()
+                self._data_pipelines.append(pipe)
+                self._steps.append(pipe)
+                scores = self._run_evaluation(X_train, X_test, y_train, y_test)
+                res = [algorithm[0], sampler[0]] + scores
+                results.loc[len(results)] = res
+
+        self.results_ = results
+        self._select_best_model()
+
+        if hasattr(self, "_last_config"):
+            delattr(self, "_last_config")
 
     def _score_from_predictor(self, estimator, X, y):
         y_pred = estimator.predict(X)
