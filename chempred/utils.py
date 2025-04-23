@@ -6,14 +6,16 @@ and a decorator able to add execution time to an array.
 """
 
 import inspect
+import os
 import pkgutil
+import site
 import time
 from functools import wraps
 from importlib import import_module
 from operator import itemgetter
 
 
-PATH = "/home/freddy/miniconda3/envs/chempred/lib/python3.12/site-packages/"
+PATH = site.getsitepackages()[0]
 
 
 _MODULE_TO_IGNORE = ["tests", "base", "plotting"]
@@ -45,7 +47,7 @@ def all_estimators_in_package(package):
 
     all_classes = []
     for _, module_name, _ in pkgutil.walk_packages(
-        path=[PATH + package],
+        path=[os.path.join(PATH, package)],
         prefix=package + "."
     ):
         module_parts = module_name.split(".")
