@@ -7,7 +7,6 @@ Module containing the Explorer class, which enables perfoming exploratory experi
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import Union, Literal, Optional
-# from itertools import product
 
 import numpy as np
 import numpy.typing as npt
@@ -84,8 +83,32 @@ class BaseExplorer(ABC):
     def evaluate(self, X_train, X_test, y_train, y_test):
         """Central method for automatic evaluation of multiple pipelines"""
         # define columns for resulting dataframe
-        # define evaluation loop
+        # define evaluation loop with _run_evaluation
+        # store results as attribute results_
+        # finally _select_best_model
         pass
+
+    @abstractmethod
+    def _score_from_predictor(self, estimator, X, y):
+        """Required implementation for performance assessment"""
+        # any number of scoring functions used. It returns results as an array
+        pass
+
+    @abstractmethod
+    def _set_estimators(self):
+        """Check provided estimators or assign 'all' estimators available"""
+        # Important to set up CLASSIFIERS or REGRESSORS
+        # use _set_custom_estimators
+        # this method needs to be run at initialiation.
+        pass
+
+    @abstractmethod
+    def _set_scoring_functions(self, scoring: Optional[list]):
+        """Define the names used for the scoring functions when showing results"""
+        if scoring is not None:
+            self._named_scoring_functions = scoring
+        else:
+            pass
 
     @add_timing
     def _run_evaluation(
@@ -177,12 +200,6 @@ class BaseExplorer(ABC):
             return estimator(**params)
         return estimator()
 
-    @abstractmethod
-    def _score_from_predictor(self, estimator, X, y):
-        """Required implementation for performance assessment"""
-        # any number of scoring functions used. It returns results as an array
-        pass
-
     def _get_steps(self, pipe1: Pipeline, pipe2: Pipeline) -> list[tuple]:
         """Unify steps of the pipelines for molecular transformation and data processing
         and training.
@@ -204,6 +221,43 @@ class BaseExplorer(ABC):
         self.best_index_ = av.sort_values(ascending=False).index[0]
         steps = self._steps[self.best_index_]
         self.best_estimator_ = Pipeline(steps)
+
+    def _set_custom_estimators(self, custom_methods: list, all_methods: list) -> list:
+        """Iterate over custom_methods to assess whether the given estimator/method is
+        implemented.
+
+        Args:
+            custom_methods (list): method to use in exploration
+                                   (e.g. [RandomForestClassifier])
+            all_methods (list): available estimators as defined in config.py
+                                (e.g. CLASSIFIERS)
+
+        Raises:
+            NotImplementedError: raise an error if any of the provided custom_methods
+                                 is not yet implemented in the Explorer.
+
+        Returns:
+            list: given estimators as tuples (name, estimator)
+        """
+        est_list = []
+        for method in custom_methods:
+            if self._check_implemented_estimator(method, all_methods):
+                est_tuple = (method.__name__, method)
+                est_list.append(est_tuple)
+            else:
+                raise NotImplementedError(f"{method=} not implemented.")
+        return est_list
+
+    def _check_implemented_estimator(self, estimator, implemented_estimators):
+        """Verify estimator is included within implemented estimators in config.py
+
+        Returns:
+            bool: True if estimator is implemented
+        """
+        estimator_classes = [est[1] for est in implemented_estimators]
+        if estimator in estimator_classes:
+            return True
+        return False
 
     @property
     def best_score_(self) -> dict:
@@ -246,57 +300,6 @@ class BaseExplorer(ABC):
             key: float(val)
             for key, val in zip(self._named_scoring_functions, scores)
         }
-
-    @abstractmethod
-    def _set_estimators(self):
-        """Check provided estimators or assign 'all' estimators available"""
-        # Important to set up CLASSIFIERS or REGRESSORS
-        pass
-
-    def _set_custom_estimators(self, custom_methods: list, all_methods: list) -> list:
-        """Iterate over custom_methods to assess whether the given estimator/method is
-        implemented.
-
-        Args:
-            custom_methods (list): method to use in exploration
-                                   (e.g. [RandomForestClassifier])
-            all_methods (list): available estimators as defined in config.py
-                                (e.g. CLASSIFIERS)
-
-        Raises:
-            NotImplementedError: raise an error if any of the provided custom_methods
-                                 is not yet implemented in the Explorer.
-
-        Returns:
-            list: given estimators as tuples (name, estimator)
-        """
-        est_list = []
-        for method in custom_methods:
-            if self._check_implemented_estimator(method, all_methods):
-                est_tuple = (method.__name__, method)
-                est_list.append(est_tuple)
-            else:
-                raise NotImplementedError(f"{method=} not implemented.")
-        return est_list
-
-    def _check_implemented_estimator(self, estimator, implemented_estimators):
-        """Verify estimator is included within implemented estimators in config.py
-
-        Returns:
-            bool: True if estimator is implemented
-        """
-        estimator_classes = [est[1] for est in implemented_estimators]
-        if estimator in estimator_classes:
-            return True
-        return False
-
-    @abstractmethod
-    def _set_scoring_functions(self, scoring: Optional[list]):
-        """Define the names used for the scoring functions when showing results"""
-        if scoring is not None:
-            self._named_scoring_functions = scoring
-        else:
-            pass
 
 
 class ClassificationExplorer(BaseExplorer):
@@ -354,6 +357,15 @@ class ClassificationExplorer(BaseExplorer):
         self.balancing_samplers = balancing_samplers
         self._set_estimators()
 
+    def __str__(self):
+        name = type(self).__name__
+        attr = self._get_attributes()
+        if attr is not None:
+            attr_str = "".join([f"{key}={val}, " for key, val in attr.items()])
+        else:
+            attr_str = ""
+        return f"{name}({attr_str})"
+
     def evaluate(
             self,
             X_train: npt.ArrayLike,
@@ -378,7 +390,7 @@ class ClassificationExplorer(BaseExplorer):
         columns = ["Algorithm", "Balancing method"]
         columns.extend(self._named_scoring_functions)
         columns.append("Time")
-
+        # Run iterative training and evaluation
         if self.mol_transformers is not None:
             columns.insert(2, "Molecular Transformer")
             results = pd.DataFrame(columns=columns)
@@ -422,9 +434,10 @@ class ClassificationExplorer(BaseExplorer):
                 res = [algorithm[0], sampler[0]] + scores
                 results.loc[len(results)] = res
 
+        # store results and select best performing pipeline
         self.results_ = results
         self._select_best_model()
-
+        # delete attribute '_last_config'
         if hasattr(self, "_last_config"):
             delattr(self, "_last_config")
 
@@ -505,15 +518,6 @@ class ClassificationExplorer(BaseExplorer):
                 else:
                     custom_list = self._set_custom_estimators(method, full_list)
                     setattr(self, name, custom_list)
-
-    def __str__(self):
-        name = type(self).__name__
-        attr = self._get_attributes()
-        if attr is not None:
-            attr_str = "".join([f"{key}={val}, " for key, val in attr.items()])
-        else:
-            attr_str = ""
-        return f"{name}({attr_str})"
 
     def _get_attributes(self) -> Optional[dict]:
         """Help to get custom attributes on defined instance to use in __str__
