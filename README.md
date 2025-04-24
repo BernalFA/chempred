@@ -1,10 +1,10 @@
 # ChemPred
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
+[![ccds](https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter)](https://cookiecutter-data-science.drivendata.org/)
 
-ChemPred is a tool for automatic evaluation of different machine learning models with focus on chemistry-related tasks. It takes advantage of the pipelining capabilities offered by [`scikit-learn`](https://scikit-learn.org/stable/), [`imbalanced-learn`](https://imbalanced-learn.org/stable/), and [`scikit-mol`](https://github.com/EBjerrum/scikit-mol). Thus, model performance comparisons on several molecular featurization is also included. 
+&nbsp;
+
+ChemPred is a tool for automatic evaluation of different machine learning models with focus on chemistry-related tasks. It takes advantage of the pipelining capabilities offered by [`scikit-learn`](https://scikit-learn.org/stable/), [`imbalanced-learn`](https://imbalanced-learn.org/stable/), and [`scikit-mol`](https://github.com/EBjerrum/scikit-mol). Thus, model performance comparisons on pipelines using several molecular featurization are one of its intended uses. 
 
 > [!IMPORTANT]
 > In its current implementation, ChemPred does not offer hyperparameter tuning. Models and pipelines are created using default values.
@@ -25,6 +25,7 @@ experiment.evaluate(smiles_train, smiles_test, y_train, y_test)
 experiment.results_.head()
 ```
 ```
+# output
 > Algorithm       | Balancing method   | Molecular Transformer          | Balanced Accuracy | F1 score | ROC AUC | Time
 > DummyClassifier | None               | AtomPairFingerprintTransformer | 0.500             | 0.860    | 0.500   | 0.0062
 > GausianNB       | RandomUnderSampler | AtomPairFingerprintTransformer | 0.673             | 0.851    | 0.673   | 0.0712
@@ -34,5 +35,4 @@ experiment.results_.head()
 ## License
 
 The content of this repo is licensed under the [MIT license](./LICENSE) conditions.
---------
 
