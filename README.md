@@ -6,8 +6,8 @@
 
 ChemPred is a tool for automatic evaluation of different machine learning models with focus on chemistry-related tasks. It takes advantage of the pipelining capabilities offered by [`scikit-learn`](https://scikit-learn.org/stable/), [`imbalanced-learn`](https://imbalanced-learn.org/stable/), and [`scikit-mol`](https://github.com/EBjerrum/scikit-mol). Thus, model performance comparisons on several molecular featurization is also included. 
 
-[!IMPORTANT]
-In its current implementation, ChemPred does not offer hyperparameter tuning. Models and pipelines are created using default values.
+> [!IMPORTANT]
+> In its current implementation, ChemPred does not offer hyperparameter tuning. Models and pipelines are created using default values.
 
 
 ## Usage
