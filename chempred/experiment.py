@@ -404,6 +404,8 @@ class ClassificationExplorer(BaseExplorer):
                     self.ml_algorithms, self.balancing_samplers,
                     desc="Models", position=1, leave=False
                 ):
+                    if algorithm[0] == "DummyClassifier" and sampler[0] is not None:
+                        continue
                     self._last_config = SimpleConfig(algorithm, sampler, transformer)
                     # print(self._last_config)
                     if transformer[0] != "MolecularDescriptorTransformer":
@@ -428,6 +430,8 @@ class ClassificationExplorer(BaseExplorer):
                 self.ml_algorithms, self.balancing_samplers,
                 desc="Models", position=1, leave=False
             ):
+                if algorithm[0] == "DummyClassifier" and sampler[0] is not None:
+                    continue
                 self._last_config = SimpleConfig(algorithm, sampler)
                 pipe = self._create_pipeline()
                 self._data_pipelines.append(pipe)
