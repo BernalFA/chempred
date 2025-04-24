@@ -1,3 +1,6 @@
+# Unnecessary script
+/tests/create_dataset.py
+
 # Data
 /data/
 
