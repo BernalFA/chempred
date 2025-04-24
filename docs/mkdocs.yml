@@ -2,3 +2,21 @@ site_name: ChemPred
 # 
 site_author: Dr. Freddy Bernal
 # 
+theme:
+  name: "material"
+
+plugins:
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [..]
+          options:
+            show_source: false
+            show_root_heading: true
+
+nav:
+  - index.md
+  - tutorials.md
+  - how-to-guides.md
+  - reference.md
+  - explanation.md
