@@ -1,21 +1,36 @@
 [build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
+requires = ["setuptools >= 77.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "chempred"
 version = "0.0.1"
-description = "A short description of the project."
+description = "Simple tool for comparative analysis of ML model performance on chemistry-related predictive tasks"
 authors = [
   { name = "Dr. Freddy Bernal" },
 ]
-license = { file = "LICENSE" }
+license-files = ["LICENSE"]
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License"
 ]
-requires-python = "~=3.12"
+requires-python = ">=3.12"
+dependencies = [
+  "scikit-learn",
+  "imbalanced-learn",
+  "rdkit",
+  "scikit-mol",
+  "pandas",
+  "numpy",
+  "openpyxl",
+  "tqdm"
+]
+
+[project.urls]
+Repository = "https://github.com/BernalFA/chempred"
+
+[tool.setuptools]
+packages = ["chempred"]
 
 [tool.black]
 line-length = 99
