@@ -21,9 +21,11 @@ from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from tqdm.contrib.itertools import product
 
-from config import CLASSIFIERS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig
-from preprocessing import RemoveCorrelated, MissingValuesRemover
-from utils import add_timing
+from chempred.config import (
+    CLASSIFIERS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig
+)
+from chempred.preprocessing import RemoveCorrelated, MissingValuesRemover
+from chempred.utils import add_timing
 
 
 def _check_fitted(cls: Callable):

@@ -10,7 +10,8 @@ from typing import Optional
 
 from sklearn.base import ClassifierMixin
 from sklearn.utils import all_estimators
-from utils import all_estimators_in_package
+
+from chempred.utils import all_estimators_in_package
 
 
 selected_classifiers = [
