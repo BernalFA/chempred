@@ -16,13 +16,12 @@ from scikit_mol.conversions import SmilesToMolTransformer
 from scikit_mol.standardizer import Standardizer
 from sklearn.exceptions import NotFittedError
 from sklearn.feature_selection import VarianceThreshold
-from sklearn.metrics import balanced_accuracy_score, f1_score, roc_auc_score
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 from tqdm.contrib.itertools import product
 
 from chempred.config import (
-    CLASSIFIERS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig
+    CLASSIFIERS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig, SCORERS
 )
 from chempred.preprocessing import RemoveCorrelated, MissingValuesRemover
 from chempred.utils import add_timing
@@ -68,7 +67,8 @@ class BaseExplorer(ABC):
             n_jobs (int, optional): number of cpu units for pipeline processing (used
                     on algorithms that allows multiprocessing). Defaults to 1.
             scoring (list | None, optional): names given to the scoring functions
-                    used during evaluation. Defaults to None to assign default names.
+                    used during evaluation. Defaults to None assign scoring as balanced
+                    accuracy.
         """
 
         self.ml_algorithms = ml_algorithms
@@ -79,7 +79,7 @@ class BaseExplorer(ABC):
         self._data_pipelines = []
         self._steps = []
         # self._set_estimators() TO SET UP IN SUBCLASS
-        self._set_scoring_functions(scoring)
+        self.scorers = self._set_scoring_functions(scoring)
 
     @abstractmethod
     def evaluate(self, X_train, X_test, y_train, y_test):
@@ -104,13 +104,25 @@ class BaseExplorer(ABC):
         # this method needs to be run at initialiation.
         pass
 
-    @abstractmethod
-    def _set_scoring_functions(self, scoring: Optional[list]):
-        """Define the names used for the scoring functions when showing results"""
-        if scoring is not None:
-            self._named_scoring_functions = scoring
-        else:
-            pass
+    @staticmethod
+    def _set_scoring_functions(scoring: Optional[list]):
+        """Help define the scoring functions used during model evaluation"""
+        if isinstance(scoring, list):
+            scorers = []
+            for scorer in scoring:
+                try:
+                    func = SCORERS[scorer]
+                    scorers.append((scorer, func))
+                except KeyError(f"""{scorer=} not recognized. Please check available
+                                scorers:
+
+                                from chempred.config import get_scorer_names
+
+                                print(get_scorer_names())"""):
+                    break
+        elif scoring is None:
+            scorers = [("balanced_accuracy", SCORERS["balanced_accuracy"])]
+        return scorers
 
     @add_timing
     def _run_evaluation(
@@ -219,7 +231,17 @@ class BaseExplorer(ABC):
         """Define best model using the obtained performance evaluation. Results are
         stored as the attributes best_index_ and best_estimator_
         """
-        av = self.results_[self._named_scoring_functions].mean(axis=1)
+        exclude = ["mcc", "cohen_kappa"]
+        cols = [scorer[0] for scorer in self.scorers]
+        results = self.results_.copy()
+        cols_average = []
+        for name in cols:
+            if name in exclude:
+                results["n" + name] = results[name] + 1 / 2
+                cols_average.append("n" + name)
+            else:
+                cols_average.append(name)
+        av = results[cols_average].mean(axis=1)
         self.best_index_ = av.sort_values(ascending=False).index[0]
         steps = self._steps[self.best_index_]
         self.best_estimator_ = Pipeline(steps)
@@ -269,7 +291,8 @@ class BaseExplorer(ABC):
         Returns:
             dict: test scores obtained for the best pipeline
         """
-        best_score = self.results_.loc[self.best_index_, self._named_scoring_functions]
+        cols = [scorer[0] for scorer in self.scorers]
+        best_score = self.results_.loc[self.best_index_, cols]
         return best_score.to_dict()
 
     def predict(self, X: npt.ArrayLike) -> np.ndarray:
@@ -298,9 +321,10 @@ class BaseExplorer(ABC):
         """
         _check_fitted(self)
         scores = self._score_from_predictor(self.best_estimator_, X, y)
+        cols = [scorer[0] for scorer in self.scorers]
         return {
             key: float(val)
-            for key, val in zip(self._named_scoring_functions, scores)
+            for key, val in zip(cols, scores)
         }
 
 
@@ -390,7 +414,7 @@ class ClassificationExplorer(BaseExplorer):
         """
         # define columns for resulting dataframe
         columns = ["Algorithm", "Balancing method"]
-        columns.extend(self._named_scoring_functions)
+        columns.extend([scorer[0] for scorer in self.scorers])
         columns.append("Time")
         # Run iterative training and evaluation
         if self.mol_transformers is not None:
@@ -467,44 +491,20 @@ class ClassificationExplorer(BaseExplorer):
             np.ndarray: performance scores
         """
         y_pred = estimator.predict(X)
-        ba = balanced_accuracy_score(y, y_pred)
-        f1 = f1_score(y, y_pred)
-        auc = self._roc_auc(estimator, X, y)
-        return np.array([ba, f1, auc])
-
-    def _roc_auc(
-            self,
-            estimator: Pipeline,
-            X: npt.ArrayLike,
-            y: npt.ArrayLike
-    ) -> float:
-        """Calculate ROC AUC for dataset using the given estimator.
-
-        Args:
-            estimator (Pipeline): pipeline containing an ML model.
-            X (npt.ArrayLike): features.
-            y (npt.ArrayLike): labels.
-
-        Returns:
-            float: ROC AUC value
-        """
         try:
             probs = estimator.predict_proba(X)[:, 1]
         except AttributeError:
             probs = estimator.decision_function(X)
-        return roc_auc_score(y, probs)
 
-    def _set_scoring_functions(self, scoring: Optional[list]):
-        """Help to define names for scoring functions (as will appear on results).
+        calc_scores = []
+        for scorer in self.scorers:
+            if scorer[0] not in ["roc_auc", "prc_auc"]:
+                value = scorer[1](y, y_pred)
+            else:
+                value = scorer[1](y, probs)
+            calc_scores.append(value)
 
-        Args:
-            scoring (list | None): names for scoring functions. If None, the default
-                                   names will be used.
-        """
-        if scoring is not None:
-            self._named_scoring_functions = scoring
-        else:
-            self._named_scoring_functions = ["Balanced Accuracy", "F1 score", "ROC AUC"]
+        return np.array(calc_scores)
 
     def _set_estimators(self):
         """Help to set all estimators from user input (attributes ml_algorithms,
@@ -547,8 +547,7 @@ class ClassificationExplorer(BaseExplorer):
             attr["random_state"] = self.random_state
         if self.n_jobs != 1:
             attr["n_jobs"] = self.n_jobs
-        scores = ["Balanced Accuracy", "F1 score", "ROC AUC"]
-        if self._named_scoring_functions != scores:
-            attr["scoring"] = self._named_scoring_functions
+        if self.scorers != [("balanced_accuracy", SCORERS["balanced_accuracy"])]:
+            attr["scoring"] = [scorer[0] for scorer in self.scorers]
 
         return attr if attr else None
