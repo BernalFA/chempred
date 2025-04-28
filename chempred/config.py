@@ -12,7 +12,7 @@ import numpy.typing as npt
 from sklearn.base import ClassifierMixin
 from sklearn.metrics import (
     balanced_accuracy_score, f1_score, roc_auc_score, precision_recall_curve, auc,
-    matthews_corrcoef
+    matthews_corrcoef, cohen_kappa_score, fbeta_score
 )
 from sklearn.utils import all_estimators
 
@@ -74,12 +74,41 @@ def prc_auc_score(y_true: npt.ArrayLike, y_score: npt.ArrayLike) -> float:
     return auc(recall, precision)
 
 
+def f0_5_score(y_true: npt.ArrayLike, y_pred: npt.ArrayLike) -> float:
+    """Calculate f0.5 score for given dataset.
+
+    Args:
+        y_true (npt.ArrayLike): true labels.
+        y (npt.ArrayLike): predicted target values returned by classifier.
+
+    Returns:
+        float: f0.5 score
+    """
+    return fbeta_score(y_true, y_pred, beta=0.5)
+
+
+def f2_score(y_true: npt.ArrayLike, y_pred: npt.ArrayLike) -> float:
+    """Calculate f2 score for given dataset.
+
+    Args:
+        y_true (npt.ArrayLike): true labels.
+        y (npt.ArrayLike): predicted target values returned by classifier.
+
+    Returns:
+        float: f2 score
+    """
+    return fbeta_score(y_true, y_pred, beta=2)
+
+
 SCORERS = dict(
     balanced_accuracy=balanced_accuracy_score,
     f1=f1_score,
     roc_auc=roc_auc_score,
     prc_auc=prc_auc_score,
     mcc=matthews_corrcoef,
+    cohen_kappa=cohen_kappa_score,
+    f_05=f0_5_score,
+    f2=f2_score,
 )
 
 
