@@ -227,24 +227,12 @@ class BaseExplorer(ABC):
         """
         return list(pipe1.named_steps.items()) + list(pipe2.named_steps.items())
 
+    @abstractmethod
     def _select_best_pipeline(self):
-        """Define best model using the obtained performance evaluation. Results are
+        """Define best model from performance metrics. Results are
         stored as the attributes best_index_ and best_estimator_
         """
-        exclude = ["mcc", "cohen_kappa"]
-        cols = [scorer[0] for scorer in self.scorers]
-        results = self.results_.copy()
-        cols_average = []
-        for name in cols:
-            if name in exclude:
-                results["n" + name] = results[name] + 1 / 2
-                cols_average.append("n" + name)
-            else:
-                cols_average.append(name)
-        av = results[cols_average].mean(axis=1)
-        self.best_index_ = av.sort_values(ascending=False).index[0]
-        steps = self._steps[self.best_index_]
-        self.best_estimator_ = Pipeline(steps)
+        pass
 
     def _set_custom_estimators(self, custom_methods: list, all_methods: list) -> list:
         """Iterate over custom_methods to assess whether the given estimator/method is
@@ -272,7 +260,8 @@ class BaseExplorer(ABC):
                 raise NotImplementedError(f"{method=} not implemented.")
         return est_list
 
-    def _check_implemented_estimator(self, estimator, implemented_estimators):
+    @staticmethod
+    def _check_implemented_estimator(estimator, implemented_estimators):
         """Verify estimator is included within implemented estimators in config.py
 
         Returns:
@@ -353,6 +342,7 @@ class ClassificationExplorer(BaseExplorer):
             random_state: int = 21,
             n_jobs: int = 1,
             scoring: Optional[list] = None,
+            select_best_by: str = "average"
     ):
         """
         Args:
@@ -371,6 +361,11 @@ class ClassificationExplorer(BaseExplorer):
                     on algorithms that allows multiprocessing). Defaults to 1.
             scoring (list | None, optional): names given to the scoring functions
                     used during evaluation. Defaults to None to assign default names.
+            select_best_by (str): mode of selection of best performing pipeline. The
+                                  name of a particular metrics used in 'scoring' can be
+                                  used. Defaults to 'average', indicating that all the
+                                  calculated metrics will be averaged to get the best
+                                  one.
         """
         super().__init__(
             ml_algorithms=ml_algorithms,
@@ -381,6 +376,7 @@ class ClassificationExplorer(BaseExplorer):
             scoring=scoring
         )
         self.balancing_samplers = balancing_samplers
+        self._select_best_by = self._verify_selection_input(select_best_by)
         self._set_estimators()
 
     def __str__(self):
@@ -527,6 +523,29 @@ class ClassificationExplorer(BaseExplorer):
                     custom_list = self._set_custom_estimators(method, full_list)
                     setattr(self, name, custom_list)
 
+    def _select_best_pipeline(self):
+        """Define best model from obtained performance metrics. Results are stored as
+        attributes best_index_ and best_estimator_
+        """
+        exclude = ["mcc", "cohen_kappa"]
+        scorers = [scorer[0] for scorer in self.scorers]
+        if self._select_best_by == "average":
+            results = self.results_.copy()
+            cols_average = []
+            for name in scorers:
+                if name in exclude:
+                    results["n" + name] = results[name] + 1 / 2
+                    cols_average.append("n" + name)
+                else:
+                    cols_average.append(name)
+            sorting_df = results[cols_average].mean(axis=1)
+        if self._select_best_by in scorers:
+            sorting_df = self.results_[self._select_best_by].copy()
+
+        self.best_index_ = sorting_df.sort_values(ascending=False).index[0]
+        steps = self._steps[self.best_index_]
+        self.best_estimator_ = Pipeline(steps)
+
     def _get_attributes(self) -> Optional[dict]:
         """Help to get custom attributes on defined instance to use in __str__
 
@@ -551,3 +570,12 @@ class ClassificationExplorer(BaseExplorer):
             attr["scoring"] = [scorer[0] for scorer in self.scorers]
 
         return attr if attr else None
+
+    def _verify_selection_input(self, selection_method):
+        scorers = [scorer[0] for scorer in self.scorers]
+        if selection_method in scorers + ["average"]:
+            return selection_method
+        else:
+            raise ValueError(
+                f"{selection_method} not in agreement with selected scoring functions."
+            )
