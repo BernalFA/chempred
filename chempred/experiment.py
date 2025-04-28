@@ -361,11 +361,13 @@ class ClassificationExplorer(BaseExplorer):
                     on algorithms that allows multiprocessing). Defaults to 1.
             scoring (list | None, optional): names given to the scoring functions
                     used during evaluation. Defaults to None to assign default names.
-            select_best_by (str): mode of selection of best performing pipeline. The
-                                  name of a particular metrics used in 'scoring' can be
-                                  used. Defaults to 'average', indicating that all the
-                                  calculated metrics will be averaged to get the best
-                                  one.
+            select_best_by (str | list): mode of selection of best performing pipeline.
+                                         The name of a particular metrics used in
+                                         'scoring' can be used. Defaults to 'average',
+                                         indicating that all the calculated metrics will
+                                         be averaged and the highest average value will
+                                         be used to define the best model. If a list is
+                                         given, those metrics will be averaged.
         """
         super().__init__(
             ml_algorithms=ml_algorithms,
@@ -529,18 +531,18 @@ class ClassificationExplorer(BaseExplorer):
         """
         exclude = ["mcc", "cohen_kappa"]
         scorers = [scorer[0] for scorer in self.scorers]
-        if self._select_best_by == "average":
+        if isinstance(self._select_best_by, str) and self._select_best_by != "average":
+            sorting_df = self.results_[self._select_best_by].copy()
+        else:
             results = self.results_.copy()
-            cols_average = []
+            cols_selection = []
             for name in scorers:
                 if name in exclude:
-                    results["n" + name] = results[name] + 1 / 2
-                    cols_average.append("n" + name)
+                    results["n_" + name] = (results[name] + 1) / 2
+                    cols_selection.append("n_" + name)
                 else:
-                    cols_average.append(name)
-            sorting_df = results[cols_average].mean(axis=1)
-        if self._select_best_by in scorers:
-            sorting_df = self.results_[self._select_best_by].copy()
+                    cols_selection.append(name)
+            sorting_df = results[cols_selection].mean(axis=1)
 
         self.best_index_ = sorting_df.sort_values(ascending=False).index[0]
         steps = self._steps[self.best_index_]
@@ -573,8 +575,12 @@ class ClassificationExplorer(BaseExplorer):
 
     def _verify_selection_input(self, selection_method):
         scorers = [scorer[0] for scorer in self.scorers]
-        if selection_method in scorers + ["average"]:
-            return selection_method
+        if isinstance(selection_method, str):
+            if selection_method in scorers + ["average"]:
+                return selection_method
+        elif isinstance(selection_method, list):
+            if set(selection_method).issubset(scorers):
+                return selection_method
         else:
             raise ValueError(
                 f"{selection_method} not in agreement with selected scoring functions."
