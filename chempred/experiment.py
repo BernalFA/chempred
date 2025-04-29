@@ -575,19 +575,35 @@ class ClassificationExplorer(BaseExplorer):
 
         return attr if attr else None
 
-    def _verify_selection_input(self, func_list):
+    def _verify_selection_input(self, metrics: Union[list, str]) -> list:
+        """Check for correctness the given method for selection of the best pipeline.
+
+        Args:
+            metrics (list | str): evaluation metrics used for selection of best
+                                  pipeline. If a list of metrics is given, their
+                                  average will be used to select the best pipeline.
+                                  Defaults to 'average' on all the metrics used
+                                  during evaluation.
+
+        Raises:
+            ValueError: raise exception if given metrics not present in the set of
+                        evaluation metrics.
+
+        Returns:
+            list: metrics
+        """
         scorers = [scorer[0] for scorer in self.scorers]
-        if isinstance(func_list, str):
-            if func_list in scorers + ["average"]:
-                return func_list
-        elif isinstance(func_list, list):
-            if set(func_list).issubset(scorers):
-                return func_list
+        if isinstance(metrics, str):
+            if metrics in scorers + ["average"]:
+                return metrics
+        elif isinstance(metrics, list):
+            if set(metrics).issubset(scorers):
+                return metrics
             else:
                 raise ValueError(
-                    f"{func_list} not in agreement with selected scoring functions."
+                    f"{metrics} not in agreement with selected scoring functions."
                 )
         else:
             raise ValueError(
-                f"{func_list} not in agreement with selected scoring functions."
+                f"{metrics} not in agreement with selected scoring functions."
             )
