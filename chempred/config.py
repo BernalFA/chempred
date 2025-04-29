@@ -107,7 +107,7 @@ SCORERS = dict(
     prc_auc=prc_auc_score,
     mcc=matthews_corrcoef,
     cohen_kappa=cohen_kappa_score,
-    f_05=f0_5_score,
+    f05=f0_5_score,
     f2=f2_score,
 )
 
