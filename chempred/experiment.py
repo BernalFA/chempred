@@ -113,15 +113,17 @@ class BaseExplorer(ABC):
                 try:
                     func = SCORERS[scorer]
                     scorers.append((scorer, func))
-                except KeyError(f"""{scorer=} not recognized. Please check available
-                                scorers:
-
-                                from chempred.config import get_scorer_names
-
-                                print(get_scorer_names())"""):
-                    break
+                except KeyError as err:
+                    err.add_note(
+                        f"{scorer=} not recognized. Please check available scorers:"
+                    )
+                    err.add_note("from chempred.config import get_scorer_names")
+                    err.add_note("print(get_scorer_names())")
+                    raise
         elif scoring is None:
             scorers = [("balanced_accuracy", SCORERS["balanced_accuracy"])]
+        else:
+            raise ValueError("'scoring' must be a list of scoring functions or None")
         return scorers
 
     @add_timing
@@ -573,15 +575,19 @@ class ClassificationExplorer(BaseExplorer):
 
         return attr if attr else None
 
-    def _verify_selection_input(self, selection_method):
+    def _verify_selection_input(self, func_list):
         scorers = [scorer[0] for scorer in self.scorers]
-        if isinstance(selection_method, str):
-            if selection_method in scorers + ["average"]:
-                return selection_method
-        elif isinstance(selection_method, list):
-            if set(selection_method).issubset(scorers):
-                return selection_method
+        if isinstance(func_list, str):
+            if func_list in scorers + ["average"]:
+                return func_list
+        elif isinstance(func_list, list):
+            if set(func_list).issubset(scorers):
+                return func_list
+            else:
+                raise ValueError(
+                    f"{func_list} not in agreement with selected scoring functions."
+                )
         else:
             raise ValueError(
-                f"{selection_method} not in agreement with selected scoring functions."
+                f"{func_list} not in agreement with selected scoring functions."
             )
