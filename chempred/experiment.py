@@ -104,27 +104,10 @@ class BaseExplorer(ABC):
         # this method needs to be run at initialiation.
         pass
 
-    @staticmethod
-    def _set_scoring_functions(scoring: Optional[list]):
+    @abstractmethod
+    def _set_scoring_functions(self, scoring: Optional[list]):
         """Help define the scoring functions used during model evaluation"""
-        if isinstance(scoring, list):
-            scorers = []
-            for scorer in scoring:
-                try:
-                    func = SCORERS[scorer]
-                    scorers.append((scorer, func))
-                except KeyError as err:
-                    err.add_note(
-                        f"{scorer=} not recognized. Please check available scorers:"
-                    )
-                    err.add_note("from chempred.config import get_scorer_names")
-                    err.add_note("print(get_scorer_names())")
-                    raise
-        elif scoring is None:
-            scorers = [("balanced_accuracy", SCORERS["balanced_accuracy"])]
-        else:
-            raise ValueError("'scoring' must be a list of scoring functions or None")
-        return scorers
+        pass
 
     @add_timing
     def _run_evaluation(
@@ -385,7 +368,7 @@ class ClassificationExplorer(BaseExplorer):
 
     def __str__(self):
         name = type(self).__name__
-        attr = self._get_attributes()
+        attr = self._get_non_default_params()
         if attr is not None:
             attr_str = "".join([f"{key}={val}, " for key, val in attr.items()])
         else:
@@ -550,7 +533,7 @@ class ClassificationExplorer(BaseExplorer):
         steps = self._steps[self.best_index_]
         self.best_estimator_ = Pipeline(steps)
 
-    def _get_attributes(self) -> Optional[dict]:
+    def _get_non_default_params(self) -> Optional[dict]:
         """Help to get custom attributes on defined instance to use in __str__
 
         Returns:
@@ -586,7 +569,7 @@ class ClassificationExplorer(BaseExplorer):
                                   during evaluation.
 
         Raises:
-            ValueError: raise exception if given metrics not present in the set of
+            ValueError: raise error if given metrics not present in the set of
                         evaluation metrics.
 
         Returns:
@@ -607,3 +590,37 @@ class ClassificationExplorer(BaseExplorer):
             raise ValueError(
                 f"{metrics} not in agreement with selected scoring functions."
             )
+
+    def _set_scoring_functions(self, scoring: Optional[list]) -> list:
+        """Help define the scoring functions used during model evaluation.
+
+        Args:
+            scoring (Optional[list]): names of scoring function to be used.
+                                      If None is provided, balanced_accuracy will
+                                      be used.
+
+        Raises:
+            ValueError: raise error if 'scoring' is not list or None.
+
+        Returns:
+            list: scorers (sklearn or custom scoring functions) used for performance
+            evaluation.
+        """
+        if isinstance(scoring, list):
+            scorers = []
+            for scorer in scoring:
+                try:
+                    func = SCORERS[scorer]
+                    scorers.append((scorer, func))
+                except KeyError as err:
+                    err.add_note(
+                        f"{scorer=} not recognized. Please check available scorers:"
+                    )
+                    err.add_note("from chempred.config import get_scorer_names")
+                    err.add_note("print(get_scorer_names())")
+                    raise
+        elif scoring is None:
+            scorers = [("balanced_accuracy", SCORERS["balanced_accuracy"])]
+        else:
+            raise ValueError("'scoring' accept as inputs lists or None")
+        return scorers
