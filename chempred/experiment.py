@@ -404,14 +404,15 @@ class ClassificationExplorer(BaseExplorer):
             columns.insert(2, "Molecular Transformer")
             results = pd.DataFrame(columns=columns)
             for transformer in tqdm(self.mol_transformers,
-                                    desc="Featurization:"):
+                                    desc="Overall progress"):
                 mol_pipe = self._create_pipeline(transformer)
                 X_train_trans = mol_pipe.fit_transform(X_train)
                 X_test_trans = mol_pipe.fit_transform(X_test)
 
                 for algorithm, sampler in product(
                     self.ml_algorithms, self.balancing_samplers,
-                    desc="Models", position=1, leave=False
+                    desc=f"Models with {transformer[0].replace("Transformer", "")}",
+                    position=1, leave=False
                 ):
                     if algorithm[0] == "DummyClassifier" and sampler[0] is not None:
                         continue
