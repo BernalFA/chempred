@@ -12,7 +12,7 @@ import numpy.typing as npt
 from sklearn.base import ClassifierMixin
 from sklearn.metrics import (
     balanced_accuracy_score, f1_score, roc_auc_score, precision_recall_curve, auc,
-    matthews_corrcoef, cohen_kappa_score, fbeta_score
+    matthews_corrcoef, cohen_kappa_score, fbeta_score, precision_score, recall_score
 )
 from sklearn.utils import all_estimators
 
@@ -109,6 +109,8 @@ SCORERS = dict(
     cohen_kappa=cohen_kappa_score,
     f05=f0_5_score,
     f2=f2_score,
+    recall=recall_score,
+    precision=precision_score,
 )
 
 
