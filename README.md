@@ -26,10 +26,12 @@ experiment.results_.head()
 ```
 ```
 # output
-> Algorithm       | Balancing method   | Molecular Transformer          | Balanced Accuracy | F1 score | ROC AUC | Time
-> DummyClassifier | None               | AtomPairFingerprintTransformer | 0.500             | 0.860    | 0.500   | 0.0062
-> GausianNB       | RandomUnderSampler | AtomPairFingerprintTransformer | 0.673             | 0.851    | 0.673   | 0.0712
-> GausianNB       | SMOTE              | AtomPairFingerprintTransformer | 0.612             | 0.880    | 0.612   | 0.1078
+> Algorithm                  | Balancing method    | Molecular Transformer           | balanced_accuracy | Time
+> LogisticRegression         | RandomUnderSampler  | MACCSKeysFingerprintTransformer | 0.800             | 0.133
+> MLPClassifier              | None                | AvalonFingerprintTransformer    | 0.811             | 2.315
+> RidgeClassifier            | SMOTE               | AvalonFingerprintTransformer    | 0.766             | 0.282
+> GaussianProcessClassifier  | None                | MorganFingerprintTransformer    | 0.768             | 6.099
+> RandomForestClassifier     | RandomUnderSampler  | AvalonFingerprintTransformer    | 0.815             | 0.396
 ```
 
 ## License
