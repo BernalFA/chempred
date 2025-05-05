@@ -8,6 +8,7 @@ transformers (as implemented in sklearn, imblearn, and scikit-mol, respectively)
 from dataclasses import dataclass
 from typing import Optional
 
+import numpy as np
 import numpy.typing as npt
 from sklearn.base import ClassifierMixin
 from sklearn.metrics import (
@@ -100,6 +101,32 @@ def f2_score(y_true: npt.ArrayLike, y_pred: npt.ArrayLike) -> float:
     return fbeta_score(y_true, y_pred, beta=2)
 
 
+def ef_score(
+        y_true: npt.ArrayLike, y_pred: npt.ArrayLike, fraction: float = 0.01
+) -> float:
+    """Calculate enrichment factor for a selected fraction set.
+
+    Args:
+        y_true (npt.ArrayLike): true labels.
+        y_pred (npt.ArrayLike): predicted target values returned by classifier.
+        fraction (float, optional): fraction considered for evaluation.
+                                    Defaults to 0.01 (1 %).
+
+    Returns:
+        float: enrichment factor for selected fraction.
+    """
+    # Combine arrays and sort values (descending)
+    values = np.vstack((y_true, y_pred)).T
+    values = values[values[:, 1].argsort()[::-1]]
+    # define totals and actives
+    total_compounds = len(values)
+    total_actives = len(values[values[:, 1] == 1])
+    num_set = int(total_compounds * fraction)
+    selected_set = values[:num_set]
+    actives_set = len(selected_set[selected_set[:, 1] == 1])
+    return actives_set * total_compounds / (total_actives * num_set)
+
+
 SCORERS = dict(
     balanced_accuracy=balanced_accuracy_score,
     f1=f1_score,
@@ -111,6 +138,7 @@ SCORERS = dict(
     f2=f2_score,
     recall=recall_score,
     precision=precision_score,
+    ef=ef_score,
 )
 
 
