@@ -102,7 +102,7 @@ def f2_score(y_true: npt.ArrayLike, y_pred: npt.ArrayLike) -> float:
 
 
 def ef_score(
-        y_true: npt.ArrayLike, y_pred: npt.ArrayLike, fraction: float = 0.01
+        y_true: npt.ArrayLike, y_pred: npt.ArrayLike, fraction: float = 0.05
 ) -> float:
     """Calculate enrichment factor for a selected fraction set.
 
@@ -110,7 +110,7 @@ def ef_score(
         y_true (npt.ArrayLike): true labels.
         y_pred (npt.ArrayLike): predicted target values returned by classifier.
         fraction (float, optional): fraction considered for evaluation.
-                                    Defaults to 0.01 (1 %).
+                                    Defaults to 0.05 (5 %).
 
     Returns:
         float: enrichment factor for selected fraction.
