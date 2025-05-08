@@ -58,7 +58,8 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
 
     def fit(self, X, y=None):
         # first validate data
-        X = validate_data(self, X, ensure_min_features=2, ensure_all_finite=False)
+        # X = validate_data(self, X, ensure_min_features=2, ensure_all_finite=False)
+        X = self._check_data_validity(X)
         # Define n_features and training samples
         self.n_features_in_ = X.shape[1]
         self.n_train_samples_ = X.shape[0]
@@ -71,7 +72,8 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
         # Check fitted as used by sklearn e.g. in VarianceThreshold class
         check_is_fitted(self)
         # validate data
-        X = validate_data(self, X, ensure_min_features=2, ensure_all_finite=False)
+        # X = validate_data(self, X, ensure_min_features=2, ensure_all_finite=False)
+        X = self._check_data_validity(X)
         # Remove NaN and Inf
         X = X[:, self.is_finite]
         # in case of test data, check for additional missing or infinite values
@@ -79,4 +81,21 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
             # Remove compounds with conflicting values (NaN or Inf)
             mask = np.isfinite(X).all(axis=1)
             X = X[mask]
+        return X
+
+    def _check_data_validity(self, X):
+        """Check if the data set exclusively consists of missing or infinite values.
+
+        Args:
+            X (np.ndarray): Input data to check.
+
+        Returns:
+            np.ndarray: dataset if not completely invalid.
+        """
+        not_finite = ~np.isfinite(X)
+        if not_finite.sum() == X.size:
+            raise ValueError("Data set contains only missing and/or infinite values.")
+        else:
+            X = validate_data(self, X, ensure_min_features=2, ensure_all_finite=False)
+
         return X
