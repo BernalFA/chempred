@@ -8,7 +8,7 @@ threshold and removal of missing values.
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_selection import SelectorMixin
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.validation import check_is_fitted, validate_data
 
 
 class RemoveCorrelated(SelectorMixin, BaseEstimator):
@@ -38,13 +38,12 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
         return mask
 
     def fit(self, X, y=None):
+        # first validate data
+        X = validate_data(self, X, ensure_min_features=2)
         # Define n_features
         self.n_features_in_ = X.shape[1]
         # Calculate pairwise correlations
-        if self.n_features_in_ > 1:
-            self.correlations_ = np.corrcoef(X, rowvar=False)
-        else:
-            self.correlations_ = np.array([1])
+        self.correlations_ = np.corrcoef(X, rowvar=False)
 
         return self
 
@@ -58,6 +57,8 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
         self.threshold = threshold  # For future implementation based on threshold
 
     def fit(self, X, y=None):
+        # first validate data
+        X = validate_data(self, X, ensure_min_features=2, ensure_all_finite=False)
         # Define n_features and training samples
         self.n_features_in_ = X.shape[1]
         self.n_train_samples_ = X.shape[0]
