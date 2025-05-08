@@ -75,7 +75,9 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
         # Remove NaN and Inf
         X = X[:, (~self.is_nan) & (~self.is_inf)]
         # in case of test data, check for additional missing values
-        if X.shape[0] != self.n_train_samples_:
+        # if X.shape[0] != self.n_train_samples_:
+        if np.isnan(X).any() or np.isinf(X).any():
+            # Remove compounds with conflicting values (NaN or Inf)
             mask1 = np.isnan(X).any(axis=1)
             mask2 = np.isinf(X).any(axis=1)
             X = X[(~mask1) & (~mask2)]
