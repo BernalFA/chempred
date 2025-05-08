@@ -72,6 +72,8 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
     def transform(self, X):
         # Check fitted as used by sklearn e.g. in VarianceThreshold class
         check_is_fitted(self)
+        # validate data
+        X = validate_data(self, X, ensure_min_features=2, ensure_all_finite=False)
         # Remove NaN and Inf
         X = X[:, (~self.is_nan) & (~self.is_inf)]
         # in case of test data, check for additional missing values
