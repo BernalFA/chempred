@@ -41,7 +41,10 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
         # Define n_features
         self.n_features_in_ = X.shape[1]
         # Calculate pairwise correlations
-        self.correlations_ = np.corrcoef(X, rowvar=False)
+        if self.n_features_in_ > 1:
+            self.correlations_ = np.corrcoef(X, rowvar=False)
+        else:
+            self.correlations_ = np.array([1])
 
         return self
 
