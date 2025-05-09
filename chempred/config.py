@@ -30,14 +30,25 @@ selected_classifiers = [
     "RandomForestClassifier",
     "RidgeClassifier",
     "SVC",
+    "XGBClassifier",
+    "LGBMClassifier",
 ]
 
-CLASSIFIERS = [
+_SKLEARN_CLASSIFIERS = [
     est
     for est in all_estimators()
     if (issubclass(est[1], ClassifierMixin)) and (est[0] in selected_classifiers)
 ]
 
+_OTHER_CLASSIFIERS = all_estimators_in_package("lightgbm")
+_OTHER_CLASSIFIERS.extend(all_estimators_in_package("xgboost"))
+_OTHER_CLASSIFIERS = [
+    est
+    for est in _OTHER_CLASSIFIERS
+    if est[0] in selected_classifiers
+]
+
+CLASSIFIERS = _SKLEARN_CLASSIFIERS + _OTHER_CLASSIFIERS
 
 selected_sampling_methods = [
     "RandomUnderSampler",

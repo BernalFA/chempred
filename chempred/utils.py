@@ -19,7 +19,9 @@ from typing import Literal
 PATH = site.getsitepackages()[0]
 
 
-_MODULE_TO_IGNORE = ["tests", "base", "plotting"]
+_MODULE_TO_IGNORE = ["tests", "base", "plotting",  # in scikit-mol and imblearn
+                     "compat", "dask",  # in LightGBM
+                     "spark"]  # in XGBoost
 
 
 def add_timing(func):
@@ -37,14 +39,14 @@ def add_timing(func):
 
 
 def all_estimators_in_package(
-        package: Literal["scikit_mol", "imblearn"]
+        package: Literal["scikit_mol", "imblearn", "xgboost", "lightgbm"]
 ) -> list[tuple]:
     """Search estimators available in specified package. The package must be installed
     in the environment/python distribution running the module. This function is adapted
     from sklearn all_estimators function.
 
     Args:
-        package (Literal["scikit_mol", "imblearn"]): package name
+        package (Literal["scikit_mol", "imblearn", "xgboost", "lightgbm"]): package name
 
     Returns:
         list[tuple]: available estimators in package as tuples (name, estimator).
@@ -117,6 +119,22 @@ def filter_classes(all_classes: list[tuple], pkg: str) -> list[tuple]:
                 and c[0] != "cls"
             )
             or (c[0] == "MolecularDescriptorTransformer")
+        ]
+
+    elif pkg == "lightgbm":
+        from lightgbm.compat import _LGBMClassifierBase
+
+        estimators = [
+            c for c in all_classes
+            if (issubclass(c[1], _LGBMClassifierBase))
+        ]
+
+    elif pkg == "xgboost":
+        from xgboost.compat import XGBClassifierBase
+
+        estimators = [
+            c for c in all_classes
+            if (issubclass(c[1], XGBClassifierBase) and c[0] != "XGBClassifierBase")
         ]
 
     return estimators
