@@ -504,12 +504,13 @@ class ClassificationExplorer(BaseExplorer):
                     attr = getattr(self, name)
                     attr.append((None, None))
                     setattr(self, name, attr)
+            elif method is None and name == "mol_transformers":
+                pass
+            elif method is None and name == "balancing_samplers":
+                setattr(self, name, [(None, None)])
             else:
-                if method is None and name == "mol_transformers":
-                    pass
-                else:
-                    custom_list = self._set_custom_estimators(method, full_list)
-                    setattr(self, name, custom_list)
+                custom_list = self._set_custom_estimators(method, full_list)
+                setattr(self, name, custom_list)
 
     def _select_best_pipeline(self):
         """Define best model from obtained performance metrics. Results are stored as
