@@ -8,15 +8,15 @@ dependencies:
   - flake8
   - imbalanced-learn
   - isort
-  - lightgbm
   - matplotlib
   - numpy
   - openpyxl
   - pandas
-  - py-xgboost
   - rdkit
   - scikit-learn
   - scikit-mol
   - tqdm
   - pip:
     - mkdocs
+    - lightgbm==4.6
+    - py-xgboost==3.0
