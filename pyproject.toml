@@ -23,7 +23,9 @@ dependencies = [
   "pandas",
   "numpy",
   "openpyxl",
-  "tqdm"
+  "tqdm",
+  "lightgbm==4.6",
+  "py-xgboost==3.0"
 ]
 
 [project.urls]
