@@ -132,10 +132,13 @@ def ef_score(
     # define totals and actives
     total_compounds = len(values)
     total_actives = len(values[values[:, 1] == 1])
-    num_set = int(total_compounds * fraction)
-    selected_set = values[:num_set]
-    actives_set = len(selected_set[selected_set[:, 1] == 1])
-    return actives_set * total_compounds / (total_actives * num_set)
+    # Check actives were predicted
+    if total_actives > 0:
+        num_set = int(total_compounds * fraction)
+        selected_set = values[:num_set]
+        actives_set = len(selected_set[selected_set[:, 1] == 1])
+        return actives_set * total_compounds / (total_actives * num_set)
+    return 0.0
 
 
 SCORERS = dict(
