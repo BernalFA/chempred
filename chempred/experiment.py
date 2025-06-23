@@ -19,7 +19,7 @@ from sklearn.feature_selection import VarianceThreshold
 from sklearn.preprocessing import StandardScaler
 try:
     from IPython import get_ipython
-    if "IPKernalApp" in get_ipython().config:
+    if "IPKernelApp" in get_ipython().config:
         from tqdm.notebook import tqdm
     else:
         from tqdm import tqdm
