@@ -17,7 +17,14 @@ from scikit_mol.standardizer import Standardizer
 from sklearn.exceptions import NotFittedError
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.preprocessing import StandardScaler
-from tqdm import tqdm
+try:
+    from IPython import get_ipython
+    if "IPKernalApp" in get_ipython().config:
+        from tqdm.notebook import tqdm
+    else:
+        from tqdm import tqdm
+except ImportError:
+    from tqdm import tqdm
 from tqdm.contrib.itertools import product
 
 from chempred.config import (
