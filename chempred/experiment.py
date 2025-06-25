@@ -417,7 +417,7 @@ class ClassificationExplorer(BaseExplorer):
                                     desc="Overall progress"):
                 mol_pipe = self._create_pipeline(transformer)
                 X_train_trans = mol_pipe.fit_transform(X_train)
-                X_test_trans = mol_pipe.fit_transform(X_test)
+                X_test_trans = mol_pipe.transform(X_test)
 
                 for algorithm, sampler in product(
                     self.ml_algorithms, self.balancing_samplers,
