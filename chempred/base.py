@@ -155,14 +155,15 @@ class BaseExplorer(ABC):
                     self._instantiate_estimator(self._last_config.estimator[1]),
                 )
             ]
-            if self._last_config.sampler[1] is not None:
-                steps.insert(
-                    0,
-                    (
-                        self._last_config.sampler[0],
-                        self._instantiate_estimator(self._last_config.sampler[1]),
-                    ),
-                )
+            if self._last_config.sampler is not None:
+                if self._last_config.sampler[1] is not None:
+                    steps.insert(
+                        0,
+                        (
+                            self._last_config.sampler[0],
+                            self._instantiate_estimator(self._last_config.sampler[1]),
+                        ),
+                    )
             if self.preprocessing:
                 preprocess = [
                     ("MissingValuesRemover", MissingValuesRemover()),
