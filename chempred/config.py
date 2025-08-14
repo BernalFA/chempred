@@ -13,7 +13,8 @@ import numpy.typing as npt
 from sklearn.base import ClassifierMixin
 from sklearn.metrics import (
     balanced_accuracy_score, f1_score, roc_auc_score, precision_recall_curve, auc,
-    matthews_corrcoef, cohen_kappa_score, fbeta_score, precision_score, recall_score
+    matthews_corrcoef, cohen_kappa_score, fbeta_score, precision_score, recall_score,
+    r2_score, mean_absolute_error, mean_squared_error, root_mean_squared_error
 )
 from sklearn.utils import all_estimators
 
@@ -153,6 +154,13 @@ CLASSIFICATION_SCORERS = dict(
     recall=recall_score,
     precision=precision_score,
     ef=ef_score,
+)
+
+REGRESSION_SCORERS = dict(
+    r2=r2_score,
+    mae=mean_absolute_error,
+    mse=mean_squared_error,
+    rmse=root_mean_squared_error
 )
 
 

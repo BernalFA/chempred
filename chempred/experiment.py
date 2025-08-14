@@ -26,7 +26,7 @@ from tqdm.contrib.itertools import product
 from chempred.base import BaseExplorer
 from chempred.config import (
     CLASSIFIERS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig,
-    CLASSIFICATION_SCORERS
+    CLASSIFICATION_SCORERS, REGRESSION_SCORERS
 )
 
 
@@ -557,9 +557,7 @@ class RegressionExplorer(BaseExplorer):
             attr["random_state"] = self.random_state
         if self.n_jobs != 1:
             attr["n_jobs"] = self.n_jobs
-        if self.scorers != [
-            ("balanced_accuracy", CLASSIFICATION_SCORERS["balanced_accuracy"])
-        ]:
+        if self.scorers != [("r2", REGRESSION_SCORERS["r2"])]:
             attr["scoring"] = [scorer[0] for scorer in self.scorers]
 
         return attr if attr else None
@@ -583,7 +581,7 @@ class RegressionExplorer(BaseExplorer):
             scorers = []
             for scorer in scoring:
                 try:
-                    func = CLASSIFICATION_SCORERS[scorer]
+                    func = REGRESSION_SCORERS[scorer]
                     scorers.append((scorer, func))
                 except KeyError as err:
                     err.add_note(
@@ -593,9 +591,7 @@ class RegressionExplorer(BaseExplorer):
                     err.add_note("print(get_scorer_names())")
                     raise
         elif scoring is None:
-            scorers = [
-                ("balanced_accuracy", CLASSIFICATION_SCORERS["balanced_accuracy"])
-            ]
+            scorers = [("r2", REGRESSION_SCORERS["r2"])]
         else:
             raise ValueError("'scoring' accept as inputs lists or None")
         return scorers
