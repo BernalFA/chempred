@@ -122,19 +122,21 @@ def filter_classes(all_classes: list[tuple], pkg: str) -> list[tuple]:
         ]
 
     elif pkg == "lightgbm":
-        from lightgbm.compat import _LGBMClassifierBase
+        from lightgbm.compat import _LGBMClassifierBase, _LGBMRegressorBase
 
         estimators = [
             c for c in all_classes
-            if (issubclass(c[1], _LGBMClassifierBase))
+            if (issubclass(c[1], _LGBMClassifierBase)) or
+            (issubclass(c[1], _LGBMRegressorBase))
         ]
 
     elif pkg == "xgboost":
-        from xgboost.compat import XGBClassifierBase
+        from xgboost.compat import XGBClassifierBase, XGBRegressorBase
 
         estimators = [
             c for c in all_classes
-            if (issubclass(c[1], XGBClassifierBase) and c[0] != "XGBClassifierBase")
+            if (issubclass(c[1], XGBClassifierBase) and c[0] != "XGBClassifierBase") or
+            (issubclass(c[1], XGBRegressorBase) and c[0] != "XGBRegressorBase")
         ]
 
     return estimators
