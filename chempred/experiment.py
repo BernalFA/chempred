@@ -25,8 +25,7 @@ from tqdm.contrib.itertools import product
 
 from chempred.base import BaseExplorer
 from chempred.config import (
-    CLASSIFIERS, REGRESSORS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig,
-    CLASSIFICATION_SCORERS, REGRESSION_SCORERS
+    CLASSIFIERS, REGRESSORS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig, SCORING
 )
 
 
@@ -285,7 +284,7 @@ class ClassificationExplorer(BaseExplorer):
         if self.n_jobs != 1:
             attr["n_jobs"] = self.n_jobs
         if self.scorers != [
-            ("balanced_accuracy", CLASSIFICATION_SCORERS["balanced_accuracy"])
+            ("balanced_accuracy", SCORING.classification["balanced_accuracy"])
         ]:
             attr["scoring"] = [scorer[0] for scorer in self.scorers]
 
@@ -310,7 +309,7 @@ class ClassificationExplorer(BaseExplorer):
             scorers = []
             for scorer in scoring:
                 try:
-                    func = CLASSIFICATION_SCORERS[scorer]
+                    func = SCORING.classification[scorer]
                     scorers.append((scorer, func))
                 except KeyError as err:
                     err.add_note(
@@ -321,7 +320,7 @@ class ClassificationExplorer(BaseExplorer):
                     raise
         elif scoring is None:
             scorers = [
-                ("balanced_accuracy", CLASSIFICATION_SCORERS["balanced_accuracy"])
+                ("balanced_accuracy", SCORING.classification["balanced_accuracy"])
             ]
         else:
             raise ValueError("'scoring' accept as inputs lists or None")
@@ -558,7 +557,7 @@ class RegressionExplorer(BaseExplorer):
             attr["random_state"] = self.random_state
         if self.n_jobs != 1:
             attr["n_jobs"] = self.n_jobs
-        if self.scorers != [("r2", REGRESSION_SCORERS["r2"])]:
+        if self.scorers != [("r2", SCORING.regression["r2"])]:
             attr["scoring"] = [scorer[0] for scorer in self.scorers]
 
         return attr if attr else None
@@ -581,7 +580,7 @@ class RegressionExplorer(BaseExplorer):
             scorers = []
             for scorer in scoring:
                 try:
-                    func = REGRESSION_SCORERS[scorer]
+                    func = SCORING.regression[scorer]
                     scorers.append((scorer, func))
                 except KeyError as err:
                     err.add_note(
@@ -591,7 +590,7 @@ class RegressionExplorer(BaseExplorer):
                     err.add_note("print(get_scorer_names())")
                     raise
         elif scoring is None:
-            scorers = [("r2", REGRESSION_SCORERS["r2"])]
+            scorers = [("r2", SCORING.regression["r2"])]
         else:
             raise ValueError("'scoring' accept as inputs lists or None")
         return scorers
