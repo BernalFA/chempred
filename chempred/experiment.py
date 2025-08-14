@@ -34,11 +34,12 @@ class ClassificationExplorer(BaseExplorer):
     created pipelines, combining molecular transformations implemented in rdkit and
     provided in scikit-mol, class imbalance sampling techniques implemented in imblearn,
     and machine learning methods implemented in sklearn. Each pipeline is evaluated for
-    predictive performance on a separate dataset (test set) using three different
-    metrics commonly used in classification problems (balanced accuracy, F1 score, and
-    ROC AUC). Afterward, the best performing pipeline (considering an average of the
-    calculated metrics) is made available for prediction of labels on unseen molecular
-    structures. Scoring on specified datasets is also possible (further evaluation).
+    predictive performance on a separate dataset (test set) using different available
+    metrics commonly used in classification problems (e.g. balanced accuracy, F1 score,
+    ROC AUC). Afterward, the best performing pipeline (according to a single metric or
+    as an average of the several) is made available for prediction of labels on unseen
+    molecular structures. Scoring on specified datasets is also possible
+    (further evaluation).
 
     The current implementation uses default values for all the estimators considered,
     except for 'random_state' and 'n_jobs' that can be configured upon instance
