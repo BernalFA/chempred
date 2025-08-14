@@ -4,17 +4,10 @@ transformers (as implemented in sklearn, imblearn, and scikit-mol, respectively)
 
 @author: Dr. Freddy A. Bernal
 """
-from dataclasses import dataclass
 from typing import Literal
 
 from chempred.config.functions import get_ml_estimators, all_estimators_in_package
-
-
-@dataclass(frozen=True)
-class Defaults:
-    classifiers: tuple[str]
-    regressors: tuple[str]
-    samplers: tuple[str]
+from chempred.config.settings import Defaults
 
 
 DEFAULT_ESTIMATORS = Defaults(
