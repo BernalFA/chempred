@@ -10,7 +10,7 @@ from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
-from sklearn.base import ClassifierMixin
+from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.metrics import (
     balanced_accuracy_score, f1_score, roc_auc_score, precision_recall_curve, auc,
     matthews_corrcoef, cohen_kappa_score, fbeta_score, precision_score, recall_score,
@@ -50,6 +50,34 @@ _OTHER_CLASSIFIERS = [
 ]
 
 CLASSIFIERS = _SKLEARN_CLASSIFIERS + _OTHER_CLASSIFIERS
+
+selected_regressors = [
+    "GaussianProcessRegressor",
+    "KNeighborsRegressor",
+    "LinearRegression",
+    "MLPRegressor",
+    "RandomForestRegressor",
+    "Ridge",
+    "SVR",
+    "XGBRegressor",
+    "LGBMRegressor",
+]
+
+_SKLEARN_REGRESSORS = [
+    est
+    for est in all_estimators()
+    if (issubclass(est[1], RegressorMixin)) and (est[0] in selected_regressors)
+]
+
+_OTHER_REGRESSORS = all_estimators_in_package("lightgbm")
+_OTHER_REGRESSORS.extend(all_estimators_in_package("xgboost"))
+_OTHER_REGRESSORS = [
+    est
+    for est in _OTHER_REGRESSORS
+    if est[0] in selected_regressors
+]
+
+REGRESSORS = _SKLEARN_REGRESSORS + _OTHER_REGRESSORS
 
 selected_sampling_methods = [
     "RandomUnderSampler",
