@@ -520,7 +520,6 @@ class RegressionExplorer(BaseExplorer):
         """Define best model from obtained performance metrics. Results are stored as
         attributes best_index_ and best_estimator_
         """
-        exclude = ["mcc", "cohen_kappa"]
         scorers = [scorer[0] for scorer in self.scorers]
         if isinstance(self._select_best_by, str) and self._select_best_by != "average":
             sorting_df = self.results_[self._select_best_by].copy()
@@ -528,14 +527,14 @@ class RegressionExplorer(BaseExplorer):
             results = self.results_.copy()
             cols_selection = []
             for name in scorers:
-                if name in exclude:
-                    results["n_" + name] = (results[name] + 1) / 2
-                    cols_selection.append("n_" + name)
+                if name == "r2":
+                    results["1-" + name] = 1 - results[name]
+                    cols_selection.append("1-" + name)
                 else:
                     cols_selection.append(name)
             sorting_df = results[cols_selection].mean(axis=1)
 
-        self.best_index_ = sorting_df.sort_values(ascending=False).index[0]
+        self.best_index_ = sorting_df.sort_values(ascending=True).index[0]
         steps = self._steps[self.best_index_]
         self.best_estimator_ = Pipeline(steps)
 
