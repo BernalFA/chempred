@@ -295,3 +295,36 @@ class BaseExplorer(ABC):
             key: float(val)
             for key, val in zip(cols, scores)
         }
+
+    def _check_metrics_for_selection(self, metrics: Union[list, str]) -> list:
+        """Check for correctness the given method for selection of the best pipeline.
+
+        Args:
+            metrics (list | str): evaluation metrics used for selection of best
+                                  pipeline. If a list of metrics is given, their
+                                  average will be used to select the best pipeline.
+                                  Defaults to 'average' on all the metrics used
+                                  during evaluation.
+
+        Raises:
+            ValueError: raise error if given metrics not present in the set of
+                        evaluation metrics.
+
+        Returns:
+            list: metrics
+        """
+        scorers = [scorer[0] for scorer in self.scorers]
+        if isinstance(metrics, str):
+            if metrics in scorers + ["average"]:
+                return metrics
+        elif isinstance(metrics, list):
+            if set(metrics).issubset(scorers):
+                return metrics
+            else:
+                raise ValueError(
+                    f"{metrics} not in agreement with selected scoring functions."
+                )
+        else:
+            raise ValueError(
+                f"{metrics} not in agreement with selected scoring functions."
+            )
