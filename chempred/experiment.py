@@ -191,8 +191,8 @@ class ClassificationExplorer(BaseExplorer):
             X: npt.ArrayLike,
             y: npt.ArrayLike
     ) -> np.ndarray:
-        """Assess performance of given estimator on the provided dataset using balanced
-        accuracy, F1 score, and ROC AUC.
+        """Assess performance of given estimator on the provided dataset using chosen
+        scoring metrics.
 
         Args:
             estimator (Pipeline): pipeline containing an ML model
