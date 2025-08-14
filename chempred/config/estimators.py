@@ -4,10 +4,7 @@ transformers (as implemented in sklearn, imblearn, and scikit-mol, respectively)
 
 @author: Dr. Freddy A. Bernal
 """
-from sklearn.base import ClassifierMixin, RegressorMixin
-from sklearn.utils import all_estimators
-
-from chempred.utils import all_estimators_in_package
+from chempred.config.functions import get_ml_estimators, all_estimators_in_package
 
 
 selected_classifiers = [
@@ -24,21 +21,12 @@ selected_classifiers = [
     "LGBMClassifier",
 ]
 
-_SKLEARN_CLASSIFIERS = [
-    est
-    for est in all_estimators()
-    if (issubclass(est[1], ClassifierMixin)) and (est[0] in selected_classifiers)
-]
 
-_OTHER_CLASSIFIERS = all_estimators_in_package("lightgbm")
-_OTHER_CLASSIFIERS.extend(all_estimators_in_package("xgboost"))
-_OTHER_CLASSIFIERS = [
+CLASSIFIERS = [
     est
-    for est in _OTHER_CLASSIFIERS
+    for est in get_ml_estimators("classification")
     if est[0] in selected_classifiers
 ]
-
-CLASSIFIERS = _SKLEARN_CLASSIFIERS + _OTHER_CLASSIFIERS
 
 selected_regressors = [
     "GaussianProcessRegressor",
@@ -52,21 +40,11 @@ selected_regressors = [
     "LGBMRegressor",
 ]
 
-_SKLEARN_REGRESSORS = [
+REGRESSORS = [
     est
-    for est in all_estimators()
-    if (issubclass(est[1], RegressorMixin)) and (est[0] in selected_regressors)
-]
-
-_OTHER_REGRESSORS = all_estimators_in_package("lightgbm")
-_OTHER_REGRESSORS.extend(all_estimators_in_package("xgboost"))
-_OTHER_REGRESSORS = [
-    est
-    for est in _OTHER_REGRESSORS
+    for est in get_ml_estimators("regression")
     if est[0] in selected_regressors
 ]
-
-REGRESSORS = _SKLEARN_REGRESSORS + _OTHER_REGRESSORS
 
 selected_sampling_methods = [
     "RandomUnderSampler",

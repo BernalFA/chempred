@@ -1,0 +1,150 @@
+"""
+Module to define helper functions necessary for configuration.
+
+@author: Dr. Freddy A. Bernal
+"""
+import inspect
+import os
+import pkgutil
+import site
+from importlib import import_module
+from operator import itemgetter
+from typing import Literal
+
+from sklearn.base import ClassifierMixin, RegressorMixin
+from sklearn.utils import all_estimators
+
+
+PATH = site.getsitepackages()[0]
+
+
+_MODULE_TO_IGNORE = ["tests", "base", "plotting",  # in scikit-mol and imblearn
+                     "compat", "dask",  # in LightGBM
+                     "spark"]  # in XGBoost
+
+
+def all_estimators_in_package(
+        package: Literal["scikit_mol", "imblearn", "xgboost", "lightgbm"]
+) -> list[tuple]:
+    """Search estimators available in specified package. The package must be installed
+    in the environment/python distribution running the module. This function is adapted
+    from sklearn all_estimators function.
+
+    Args:
+        package (Literal["scikit_mol", "imblearn", "xgboost", "lightgbm"]): package name
+
+    Returns:
+        list[tuple]: available estimators in package as tuples (name, estimator).
+    """
+
+    def is_abstract(c):
+        if not hasattr(c, "__abstractmethods__"):
+            return False
+        if not len(c.__abstractmethods__):
+            return False
+        return True
+
+    all_classes = []
+    for _, module_name, _ in pkgutil.walk_packages(
+        path=[os.path.join(PATH, package)],
+        prefix=package + "."
+    ):
+        module_parts = module_name.split(".")
+        if (
+            any(part in _MODULE_TO_IGNORE for part in module_parts)
+            or "._" in module_name
+            or "test" in module_name
+        ):
+            continue
+        module = import_module(module_name)
+        classes = inspect.getmembers(module, inspect.isclass)
+        classes = [
+            (name, est_cls)
+            for name, est_cls in classes
+            if not name.startswith("_")
+        ]
+        all_classes.extend(classes)
+
+    all_classes = set(all_classes)
+    estimators = filter_classes(all_classes, pkg=package)
+    estimators = [c for c in estimators if not is_abstract(c[1])]
+
+    return sorted(set(estimators), key=itemgetter(0))
+
+
+def filter_classes(all_classes: list[tuple], pkg: str) -> list[tuple]:
+    """remove unnecessary classes from general list of available classes according to
+    key inheritance (based on the package itself).
+
+    Args:
+        all_classes (list[tuple]): full list of classes in package
+        pkg (str): package name
+
+    Returns:
+        list[tuple]: filtered list of classes of interest
+    """
+
+    if pkg == "imblearn":
+        from imblearn.base import BaseSampler
+
+        estimators = [
+            c for c in all_classes
+            if (issubclass(c[1], BaseSampler) and c[0] != "BaseSampler")
+        ]
+
+    elif pkg == "scikit_mol":
+        from scikit_mol.fingerprints.baseclasses import BaseFpsTransformer
+
+        estimators = [
+            c
+            for c in all_classes
+            if (
+                issubclass(c[1], BaseFpsTransformer)
+                and c[0] != "BaseFpsTransformer"
+                and c[0] != "cls"
+            )
+            or (c[0] == "MolecularDescriptorTransformer")
+        ]
+
+    elif pkg == "lightgbm":
+        from lightgbm.compat import _LGBMClassifierBase, _LGBMRegressorBase
+
+        estimators = [
+            c for c in all_classes
+            if (issubclass(c[1], _LGBMClassifierBase)) or
+            (issubclass(c[1], _LGBMRegressorBase))
+        ]
+
+    elif pkg == "xgboost":
+        from xgboost.compat import XGBClassifierBase, XGBRegressorBase
+
+        estimators = [
+            c for c in all_classes
+            if (issubclass(c[1], XGBClassifierBase) and c[0] != "XGBClassifierBase") or
+            (issubclass(c[1], XGBRegressorBase) and c[0] != "XGBRegressorBase")
+        ]
+
+    return estimators
+
+
+def get_ml_estimators(mode: Literal["classification", "regression"]) -> list[tuple]:
+    """Retrieve all the estimator classes in sklearn, lightGBM, and XGBoost according
+    to the especified mode.
+
+    Args:
+        mode (Literal[&quot;classification&quot;, &quot;regression&quot;]): whether to
+                    choose from classification or regression models
+
+    Returns:
+        list[tuple]: ML estimators
+    """
+    if mode == "classification":
+        mixin = ClassifierMixin
+    elif mode == "regression":
+        mixin = RegressorMixin
+
+    sklearn = [est for est in all_estimators() if issubclass(est[1], mixin)]
+    lgbm = all_estimators_in_package("lightgbm")
+    xgb = all_estimators_in_package("xgboost")
+    estimators = sklearn + lgbm + xgb
+    return estimators
