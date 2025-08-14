@@ -1,5 +1,5 @@
 """
-Module containing the Explorer class, which enables perfoming exploratory experiments.
+Module containing the BaseExplorer class necessary to create custom explorers.
 
 @author: Dr. Freddy A. Bernal
 """

@@ -1,5 +1,5 @@
 """
-Module containing the Explorer class, which enables perfoming exploratory experiments.
+Module containing the Explorer classes, which enable perfoming exploratory experiments.
 
 @author: Dr. Freddy A. Bernal
 """
