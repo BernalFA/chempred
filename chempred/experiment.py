@@ -25,7 +25,7 @@ from tqdm.contrib.itertools import product
 
 from chempred.base import BaseExplorer
 from chempred.config import (
-    CLASSIFIERS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig,
+    CLASSIFIERS, REGRESSORS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig,
     CLASSIFICATION_SCORERS, REGRESSION_SCORERS
 )
 
@@ -547,7 +547,7 @@ class RegressionExplorer(BaseExplorer):
             returned when all attributes are set as default.
         """
         attr = {}
-        if self.ml_algorithms != CLASSIFIERS:
+        if self.ml_algorithms != REGRESSORS:
             attr["ml_algorithms"] = [est[1] for est in self.ml_algorithms]
         if self.mol_transformers != MOL_TRANSFORMERS:
             attr["mol_transformers"] = [est[1] for est in self.mol_transformers]
@@ -567,8 +567,7 @@ class RegressionExplorer(BaseExplorer):
 
         Args:
             scoring (Optional[list]): names of scoring function to be used.
-                                      If None is provided, balanced_accuracy will
-                                      be used.
+                                      If None is provided, r2 will be used.
 
         Raises:
             ValueError: raise error if 'scoring' is not list or None.
