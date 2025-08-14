@@ -184,13 +184,12 @@ class BaseExplorer(ABC):
         Returns:
             instantiated estimator
         """
-        from lightgbm import LGBMClassifier
         params = {}
         if "random_state" in estimator().get_params().keys():
             params["random_state"] = self.random_state
         if "n_jobs" in estimator().get_params().keys():
             params["n_jobs"] = self.n_jobs
-        if estimator == LGBMClassifier:
+        if estimator.__name__ == "LGBMClassifier":
             params["verbose"] = -1
             return estimator(**params)
         return estimator()
