@@ -320,7 +320,9 @@ class ClassificationExplorer(BaseExplorer):
                     err.add_note("print(get_scorer_names())")
                     raise
         elif scoring is None:
-            scorers = [("balanced_accuracy", CLASSIFICATION_SCORERS["balanced_accuracy"])]
+            scorers = [
+                ("balanced_accuracy", CLASSIFICATION_SCORERS["balanced_accuracy"])
+            ]
         else:
             raise ValueError("'scoring' accept as inputs lists or None")
         return scorers
