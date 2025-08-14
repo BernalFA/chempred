@@ -2,6 +2,7 @@
 /tests/create_dataset.py
 # temporary deactivate tests
 /tests/
+single*
 
 # Data
 /data/
