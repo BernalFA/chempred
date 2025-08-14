@@ -141,7 +141,7 @@ def ef_score(
     return 0.0
 
 
-SCORERS = dict(
+CLASSIFICATION_SCORERS = dict(
     balanced_accuracy=balanced_accuracy_score,
     f1=f1_score,
     roc_auc=roc_auc_score,
@@ -162,4 +162,4 @@ def get_scorer_names() -> list:
     Returns:
         list: Names of available scorers.
     """
-    return sorted(SCORERS.keys())
+    return sorted(CLASSIFICATION_SCORERS.keys())
