@@ -11,7 +11,6 @@ from importlib import import_module
 from operator import itemgetter
 from typing import Literal
 
-from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.utils import all_estimators
 
 
@@ -127,23 +126,13 @@ def filter_classes(all_classes: list[tuple], pkg: str) -> list[tuple]:
     return estimators
 
 
-def get_ml_estimators(mode: Literal["classification", "regression"]) -> list[tuple]:
-    """Retrieve all the estimator classes in sklearn, lightGBM, and XGBoost according
-    to the especified mode.
-
-    Args:
-        mode (Literal[&quot;classification&quot;, &quot;regression&quot;]): whether to
-                    choose from classification or regression models
+def get_ml_estimators() -> list[tuple]:
+    """Retrieve all the estimator classes in sklearn, lightGBM, and XGBoost.
 
     Returns:
         list[tuple]: ML estimators
     """
-    if mode == "classification":
-        mixin = ClassifierMixin
-    elif mode == "regression":
-        mixin = RegressorMixin
-
-    sklearn = [est for est in all_estimators() if issubclass(est[1], mixin)]
+    sklearn = all_estimators()
     lgbm = all_estimators_in_package("lightgbm")
     xgb = all_estimators_in_package("xgboost")
     estimators = sklearn + lgbm + xgb
