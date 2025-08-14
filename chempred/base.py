@@ -151,8 +151,8 @@ class BaseExplorer(ABC):
         else:
             steps = [
                 (
-                    self._last_config.classifier[0],
-                    self._instantiate_estimator(self._last_config.classifier[1]),
+                    self._last_config.estimator[0],
+                    self._instantiate_estimator(self._last_config.estimator[1]),
                 )
             ]
             if self._last_config.sampler[1] is not None:

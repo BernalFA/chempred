@@ -66,7 +66,7 @@ MOL_TRANSFORMERS = all_estimators_in_package("scikit_mol")
 
 @dataclass
 class SimpleConfig:
-    classifier: tuple
+    estimator: tuple
     sampler: Optional[tuple] = None
     transformer: Optional[tuple] = None
 
