@@ -31,8 +31,10 @@ dependencies = [
 [project.urls]
 Repository = "https://github.com/BernalFA/chempred"
 
-[tool.setuptools]
-packages = ["chempred"]
+# [tool.setuptools]
+# packages = ["chempred"]
+[tool.setuptools.packages.find]
+exclude = ["tests", "docs"]
 
 [tool.black]
 line-length = 99
