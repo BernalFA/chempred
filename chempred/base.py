@@ -36,7 +36,7 @@ def _check_fitted(cls: Callable):
 
 
 class BaseExplorer(ABC):
-    """Abstract class for exploration. The central method 'evaluate' is defined here."""
+    """Abstract class for exploration. The central method `evaluate` is defined here."""
 
     def __init__(
         self,

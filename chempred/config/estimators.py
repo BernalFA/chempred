@@ -45,6 +45,15 @@ DEFAULT_ESTIMATORS = Defaults(
 def get_available_estimators(
         category: Literal["classifiers", "regressors", "samplers", "mol_transformers"]
 ) -> list[tuple]:
+    """Provide a list of estimators according to the given category.
+
+    Args:
+        category (Literal['classifiers', 'regressors', 'samplers', 'mol_transformers']):
+                    type of estimator.
+
+    Returns:
+        list[tuple]: available estimators as name : Callable pairs.
+    """
     if category in ["classifiers", "regressors"]:
         default_names = getattr(DEFAULT_ESTIMATORS, category)
         estimators = get_ml_estimators()

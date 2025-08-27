@@ -14,6 +14,12 @@ from sklearn.utils.validation import check_is_fitted, validate_data
 class RemoveCorrelated(SelectorMixin, BaseEstimator):
     """Sklearn compatible transformer to remove highly correlated features
     from given dataset.
+
+    Example:
+        ```python
+        remover = RemoveCorrelated(threshold=0.8)
+        X_processed = remover.fit_transform(X)
+        ```
     """
 
     def __init__(self, threshold: float = 0.8):
@@ -51,6 +57,12 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
 class MissingValuesRemover(TransformerMixin, BaseEstimator):
     """Sklearn compatible transformer to remove features containing missing or infinite
     values.
+
+    Example:
+        ```python
+        remover = MissingValuesRemover()
+        X_processed = remover.fit_transform(X)
+        ```
     """
 
     def __init__(self, threshold: float = 0.2):

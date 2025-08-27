@@ -31,19 +31,19 @@ from chempred.config import (
 
 class ClassificationExplorer(BaseExplorer):
     """Facilitate training and performance assessment of a series of automatically
-    created pipelines, combining molecular transformations implemented in rdkit and
-    provided in scikit-mol, class imbalance sampling techniques implemented in imblearn,
-    and machine learning methods implemented in sklearn. Each pipeline is evaluated for
-    predictive performance on a separate dataset (test set) using different available
-    metrics commonly used in classification problems (e.g. balanced accuracy, F1 score,
-    ROC AUC). Afterward, the best performing pipeline (according to a single metric or
-    as an average of the several) is made available for prediction of labels on unseen
-    molecular structures. Scoring on specified datasets is also possible
+    created pipelines, combining molecular transformations implemented in `rdkit` and
+    provided in `scikit-mol`, class imbalance sampling techniques implemented in
+    `imblearn`, and machine learning methods implemented in `sklearn`. Each pipeline is
+    evaluated for predictive performance on a separate dataset (validation set) using
+    different available metrics commonly used in classification problems (e.g. balanced
+    accuracy, F1 score, ROC AUC). Afterward, the best performing pipeline (according to
+    a single metric or an average of several) is made available for prediction of labels
+    on unseen molecular structures. Scoring on specified datasets is also possible
     (further evaluation).
 
-    The current implementation uses default values for all the estimators considered,
-    except for 'random_state' and 'n_jobs' that can be configured upon instance
-    definition.
+    The current implementation uses default values for all the parameters in the
+    considered estimators, except for `random_state` and `n_jobs`, which can be
+    configured upon instance definition.
     """
 
     def __init__(
@@ -70,17 +70,16 @@ class ClassificationExplorer(BaseExplorer):
             preprocessing (bool, optional): if True, a data preprocessing pipeline will
                     be applied before training the model. Defaults to True. Only
                     applicable for molecular descriptors.
-            n_jobs (int, optional): number of cpu units for pipeline processing (used
+            n_jobs (int, optional): number of cpu cores for pipeline processing (used
                     on algorithms that allows multiprocessing). Defaults to 1.
             scoring (list | None, optional): names given to the scoring functions
                     used during evaluation. Defaults to None to assign default names.
             select_best_by (str | list): mode of selection of best performing pipeline.
-                                         The name of a particular metrics used in
-                                         'scoring' can be used. Defaults to 'average',
-                                         indicating that all the calculated metrics will
-                                         be averaged and the highest average value will
-                                         be used to define the best model. If a list is
-                                         given, those metrics will be averaged.
+                    The name of a particular metrics used in `scoring` can be used.
+                    Defaults to 'average', indicating that all the calculated metrics
+                    will be averaged and the highest average value will be used to
+                    define the best model. If a list is given, those metrics will be
+                    averaged.
         """
         super().__init__(
             ml_algorithms=ml_algorithms,
@@ -111,11 +110,12 @@ class ClassificationExplorer(BaseExplorer):
             y_test: npt.ArrayLike
     ):
         """Sequentially create and train pipelines with the training dataset, and assess
-        performance using the test dataset. During execution, attributes _data_pipelines
-        (containing all the created pipelines for data preprocessing and ML modeling)
-        and _steps (containing the steps for the full pipeline including molecular
-        transformations) are created. After iteration, the best pipeline is chosen,
-        making available the attributes best_estimator_ and best_index_.
+        performance using the test dataset. During execution, private attributes
+        `_data_pipelines` (containing all the created pipelines for data preprocessing
+        and ML modeling) and `_steps` (containing the steps for the full pipeline
+        including molecular transformations) are created. After iteration, the best
+        pipeline is chosen, making available the attributes `best_estimator_` and
+        `best_index_`.
 
         Args:
             X_train (npt.ArrayLike): training smiles / features
@@ -191,7 +191,7 @@ class ClassificationExplorer(BaseExplorer):
             X: npt.ArrayLike,
             y: npt.ArrayLike
     ) -> np.ndarray:
-        """Assess performance of given estimator on the provided dataset using chosen
+        """Assess performance of a given estimator on the provided dataset using chosen
         scoring metrics.
 
         Args:
@@ -329,17 +329,17 @@ class ClassificationExplorer(BaseExplorer):
 
 class RegressionExplorer(BaseExplorer):
     """Facilitate training and performance assessment of a series of automatically
-    created pipelines, combining molecular transformations implemented in rdkit and
-    provided in scikit-mol, and machine learning methods implemented in sklearn.
+    created pipelines, combining molecular transformations implemented in `rdkit` and
+    provided in `scikit-mol`, and machine learning methods implemented in `sklearn`.
     Each pipeline is evaluated for predictive performance on a separate dataset
-    (test set) by user-chosen evaluation metrics. Afterward, the best performing
-    pipeline (by a specific metric or the average of all) is made available for
-    predictions on unseen molecular structures. Scoring on specified datasets is
-    also possible (further evaluation).
+    (validation set) by a user-defined evaluation metrics. Afterward, the best
+    performing pipeline (by a specific metric or the average of several) is made
+    available for predictions on unseen molecular structures. Scoring on specified
+    datasets is also possible (further evaluation).
 
-    The current implementation uses default values for all the estimators considered,
-    except for 'random_state' and 'n_jobs' that can be configured upon instance
-    definition.
+    The current implementation uses default values for all the parameter of the
+    considered estimators, except for `random_state` and `n_jobs`, which can be
+    configured upon instance definition.
     """
 
     def __init__(
@@ -367,12 +367,11 @@ class RegressionExplorer(BaseExplorer):
             scoring (list | None, optional): names given to the scoring functions
                     used during evaluation. Defaults to None to assign default names.
             select_best_by (str | list): mode of selection of best performing pipeline.
-                                         The name of a particular metrics used in
-                                         'scoring' can be used. Defaults to 'average',
-                                         indicating that all the calculated metrics will
-                                         be averaged and the highest average value will
-                                         be used to define the best model. If a list is
-                                         given, those metrics will be averaged.
+                    The name of a particular metrics used in `scoring` can be used.
+                    Defaults to 'average', indicating that all the calculated metrics
+                    will be averaged and the highest average value will be used to
+                    define the best model. If a list is given, those metrics will be
+                    averaged.
         """
         super().__init__(
             ml_algorithms=ml_algorithms,
@@ -402,11 +401,12 @@ class RegressionExplorer(BaseExplorer):
             y_test: npt.ArrayLike
     ):
         """Sequentially create and train pipelines with the training dataset, and assess
-        performance using the test dataset. During execution, attributes _data_pipelines
-        (containing all the created pipelines for data preprocessing and ML modeling)
-        and _steps (containing the steps for the full pipeline including molecular
-        transformations) are created. After iteration, the best pipeline is chosen,
-        making available the attributes best_estimator_ and best_index_.
+        performance using the test dataset. During execution, private attributes
+        `_data_pipelines` (containing all the created pipelines for data preprocessing
+        and ML modeling) and `_steps` (containing the steps for the full pipeline
+        including molecular transformations) are created. After iteration, the best
+        pipeline is chosen, making available the attributes `best_estimator_` and
+        `best_index_`.
 
         Args:
             X_train (npt.ArrayLike): training smiles / features
