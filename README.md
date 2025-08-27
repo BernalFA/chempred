@@ -7,21 +7,21 @@
 ChemPred is a tool for automatic evaluation of different machine learning models with focus on chemistry-related tasks. It takes advantage of the pipelining capabilities offered by [`scikit-learn`](https://scikit-learn.org/stable/), [`imbalanced-learn`](https://imbalanced-learn.org/stable/), and [`scikit-mol`](https://github.com/EBjerrum/scikit-mol). Thus, model performance comparisons on pipelines using several molecular featurization are one of its intended uses. 
 
 > [!IMPORTANT]
-> In its current implementation, ChemPred does not offer hyperparameter tuning. Models and pipelines are created using default values.
+> In its current implementation, `ChemPred` does not offer hyperparameter tuning. Models and pipelines are created using default values.
 
 
 ## Usage
 
-Minimum example:
+Minimum example (classification mode):
 
 ```python
 from chempred.experiment import ClassificationExplorer
 
 # set up exploration experiment
 experiment = ClassificationExplorer()
-# run pipeline creation and evaluation
+# run evaluation (automatic pipeline creation, fitting, and scoring)
 experiment.evaluate(smiles_train, smiles_test, y_train, y_test)
-# check results
+# check results (pandas DataFrame)
 experiment.results_.head()
 ```
 ```
@@ -33,6 +33,17 @@ experiment.results_.head()
 > GaussianProcessClassifier  | None                | MorganFingerprintTransformer    | 0.768             | 6.099
 > RandomForestClassifier     | RandomUnderSampler  | AvalonFingerprintTransformer    | 0.815             | 0.396
 ```
+
+## Installation
+
+At the moment, only installation from source is possible:
+
+```bash
+git clone https://github.com/BernalFA/chempred.git
+cd chempred
+pip install
+```
+
 
 ## License
 
