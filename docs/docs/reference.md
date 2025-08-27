@@ -1,16 +1,13 @@
 Reference
 ===============
 
-This part of the project documentation focuses on an **information-oriented** approach. Use it as a reference for the technical implementation of the `ChemPred` project code.
 
+- [ClassificationExplorer](./reference/classification_explorer.md)
 
-::: chempred.experiment.ClassificationExplorer
-    options:
-      inherited_members: true
-      summary: true
+- [RegressionExplorer](./reference/regression_explorer.md)
 
+- [MissingValuesRemover](./reference/missing_values_remover.md)
 
-::: chempred.preprocessing.RemoveCorrelated
+- [RemoveCorrelated](./reference/remove_correlated.md)
 
-
-::: chempred.preprocessing.MissingValuesRemover
+- [get_available_estimators](./reference/get_available_estimators.md)

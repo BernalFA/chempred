@@ -4,6 +4,8 @@ site_author: Dr. Freddy Bernal
 # 
 theme:
   name: "material"
+  features:
+    - header.social
 
 plugins:
   - mkdocstrings:
@@ -13,10 +15,29 @@ plugins:
           options:
             show_source: false
             show_root_heading: true
+            # merge_init_into_class: true
+            # docstring_section_style: table
+  - search
+
 
 nav:
-  - index.md
+  - Overview: index.md
   - tutorials.md
   - how-to-guides.md
-  - reference.md
+  - Reference:
+      - reference.md
+      - Explorers:
+          - reference/classification_explorer.md
+          - reference/regression_explorer.md
+      - Preprocessors:
+          - reference/missing_values_remover.md
+          - reference/remove_correlated.md
+      - Utilities:
+          - reference/get_available_estimators.md
   - explanation.md
+
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/BernalFA/chempred.git

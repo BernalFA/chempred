@@ -1,6 +1,6 @@
 # Tutorials
 
-This part of the project documentation focuses on a **learning-oriented** approach. You'll learn how to get started with the code in this project.
+<!-- This part of the project documentation focuses on a **learning-oriented** approach. You'll learn how to get started with the code in this project.
 
 > **Note:** Expand this section by considering the
 > following points:
@@ -13,4 +13,4 @@ This part of the project documentation focuses on a **learning-oriented** approa
 - Give readers an immediate sense of achievement
 - Show concrete examples, no abstractions
 - Provide the minimum necessary explanation
-- Avoid any distractions
+- Avoid any distractions -->
