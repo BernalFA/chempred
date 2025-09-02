@@ -6,6 +6,7 @@ threshold and removal of missing values.
 """
 
 import numpy as np
+import numpy.typing as npt
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.feature_selection import SelectorMixin
@@ -117,7 +118,16 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
         return X
 
 
-def shift_log_transform(values):
+def shift_log_transform(values: npt.ArrayLike) -> npt.ArrayLike:
+    """Sequential data processing consisting of shifting to avoid negative values
+    and subsequent log transformation
+
+    Args:
+        values (npt.ArrayLike): raw descriptor values.
+
+    Returns:
+        npt.ArrayLike: transformed descriptor values.
+    """
     min_val = np.min(values)
     if min_val <= 0:
         shifted = values - min_val + 1e-6
@@ -142,8 +152,29 @@ heavy_skew_transform_pipeline = Pipeline([
 
 
 class RDKit2DScaler(TransformerMixin, BaseEstimator):
-    def __init__(self, skewness_threshold):
-        super().__init__()
+    """Sklearn compatible transformer for preprocessing of RDKit 2D descriptors. Based
+    on the values for each descriptor, a custom scaling will be applied. Descriptors
+    representing counts or consisting of small integer  numbers will be shifted (if
+    negative values), log transformed, and finally scaled on MinMax values. Descriptors
+    showing heavy skewing (> skewness_threshold) will be shifted (if negative values),
+    log transformed, and finally scaled using the StandardScaler. Descriptors with low
+    (to moderate) skewness will be directly scaled with StandardScaler. Descriptors
+    consisting of binary input or with values bounded to small values will be kept as
+    are.
+
+    Example:
+        ```python
+        scaler = RDKit2DScaler()
+        X_processed = scaler.fit_transform(X)
+        ```
+    """
+
+    def __init__(self, skewness_threshold: int = 2):
+        """
+        Args:
+            skewness_threshold (int, optional): limit to consider descriptor a heavily
+                                                skewed. Defaults to 2.
+        """
         self.skewness_threshold = skewness_threshold
 
     def fit(self, X, y=None):
@@ -167,7 +198,16 @@ class RDKit2DScaler(TransformerMixin, BaseEstimator):
         X = self.transformer.transform(X)
         return X
 
-    def _get_transformation_mask(self, X):
+    def _get_transformation_mask(self, X: npt.ArrayLike) -> dict:
+        """Create a dictionary with groups of descriptor classes and the corresponding
+        column indexes.
+
+        Args:
+            X (npt.ArrayLike): RDKit 2D descriptors.
+
+        Returns:
+            dict: column indexes for each type of descriptor.
+        """
         # Define groups and empty dict for indices
         groups = ["binary", "count", "bounded", "heavy_skew", "moderate_skew"]
         mask = {group: [] for group in groups}
@@ -205,7 +245,17 @@ class RDKit2DScaler(TransformerMixin, BaseEstimator):
 
         return mask
 
-    def _create_transformer(self, mask):
+    def _create_transformer(self, mask: dict) -> ColumnTransformer:
+        """Automatically create the ColumnTransformer needed to scale the descriptors
+        data set.
+
+        Args:
+            mask (dict): column indexes for each descriptor type obtained with
+                         `_get_transformation_mask`.
+
+        Returns:
+            ColumnTransformer: ready to use sklearn transformer.
+        """
         processes = []
         if mask["count"]:
             processes.append((
