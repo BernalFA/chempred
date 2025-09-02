@@ -30,7 +30,7 @@ SCORING = Scoring(
         "precision": precision_score,
         "ef": ef_score,
     }),
-    regression=({
+    regression=MappingProxyType({
         "r2": r2_score,
         "mae": mean_absolute_error,
         "mse": mean_squared_error,
