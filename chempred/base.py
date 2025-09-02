@@ -16,7 +16,9 @@ from scikit_mol.standardizer import Standardizer
 from sklearn.exceptions import NotFittedError
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.preprocessing import StandardScaler
-from chempred.preprocessing import RemoveCorrelated, MissingValuesRemover
+from chempred.preprocessing import (
+    RemoveCorrelated, MissingValuesRemover, RDKit2DScaler
+)
 from chempred.utils import add_timing
 
 
@@ -42,7 +44,7 @@ class BaseExplorer(ABC):
         self,
         ml_algorithms: Union[list, Literal["all"]] = "all",
         mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
-        preprocessing: bool = True,  # automatically turned off if fingerprints
+        preprocessing: Optional[Literal["StandardScaler", "RDKit2DScaler"]] = None,
         random_state: int = 21,
         n_jobs: int = 1,
         scoring: Optional[list] = None,
@@ -54,9 +56,10 @@ class BaseExplorer(ABC):
             mol_transformers (list | 'all' | None, optional): molecular transformers
                     to include in exploration. Defaults to "all" (include all the
                     implemented transformers).
-            preprocessing (bool, optional): if True, a data preprocessing pipeline will
-                    be applied before training the model. Defaults to True. Only
-                    applicable for molecular descriptors.
+            preprocessing ("StandardScaler" | "RDKit2DScaler" | None, optional): data
+                    preprocessing applied before training the model. Defaults to `None`.
+                    If molecular transformation to fingerprints, `preprocessing` will be
+                    ignored.
             n_jobs (int, optional): number of cpu units for pipeline processing (used
                     on algorithms that allows multiprocessing). Defaults to 1.
             scoring (list | None, optional): names given to the scoring functions
@@ -73,6 +76,7 @@ class BaseExplorer(ABC):
         self._steps = []
         # self._set_estimators() TO SET UP IN SUBCLASS
         self.scorers = self._set_scoring_functions(scoring)
+        self._from_descriptors = False
 
     @abstractmethod
     def evaluate(self, X_train, X_test, y_train, y_test):
@@ -164,13 +168,19 @@ class BaseExplorer(ABC):
                             self._instantiate_estimator(self._last_config.sampler[1]),
                         ),
                     )
-            if self.preprocessing:
+            if (self.preprocessing is not None) and self._from_descriptors:
                 preprocess = [
                     ("MissingValuesRemover", MissingValuesRemover()),
                     ("RemoveCorrelated", RemoveCorrelated()),
                     ("VarianceThreshold", VarianceThreshold()),
-                    ("StandardScaler", StandardScaler()),
                 ]
+                if self.preprocessing == "StandardScaler":
+                    scaler = (self.preprocessing, StandardScaler())
+                elif self.preprocessing == "RDKit2DScaler":
+                    scaler = (self.preprocessing, RDKit2DScaler())
+                else:
+                    raise NotImplementedError(f"{self.preprocessing} not implemented")
+                preprocess.append(scaler)
                 steps = preprocess + steps
 
         return Pipeline(steps=steps)
