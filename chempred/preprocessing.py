@@ -7,7 +7,7 @@ threshold and removal of missing values.
 
 import numpy as np
 import numpy.typing as npt
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator
 from sklearn.feature_selection import SelectorMixin
 from sklearn.utils.validation import check_is_fitted, validate_data
 
@@ -58,7 +58,7 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
         return super().get_feature_names_out(input_features)
 
 
-class MissingValuesRemover(TransformerMixin, BaseEstimator):
+class MissingValuesRemover(SelectorMixin, BaseEstimator):
     """Sklearn compatible transformer to remove features containing missing or infinite
     values.
 
@@ -71,6 +71,11 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
 
     def __init__(self, threshold: float = 0.2):
         self.threshold = threshold  # For future implementation based on threshold
+
+    def _get_support_mask(self) -> npt.ArrayLike:
+        # Check fitted as used by sklearn e.g. in VarianceThreshold class
+        check_is_fitted(self)
+        return self.is_finite
 
     def fit(self, X: npt.ArrayLike, y: npt.ArrayLike = None):
         # first validate data
@@ -115,6 +120,9 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
             X = validate_data(self, X, ensure_min_features=2, ensure_all_finite=False)
 
         return X
+
+    def get_feature_names_out(self, input_features=None):
+        return super().get_feature_names_out(input_features)
 
 
 def shift_log_transform(values: npt.ArrayLike) -> npt.ArrayLike:
