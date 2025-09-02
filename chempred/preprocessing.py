@@ -35,7 +35,7 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
         """
         self.threshold = threshold
 
-    def _get_support_mask(self):
+    def _get_support_mask(self) -> npt.ArrayLike[bool]:
         # Check fitted as used by sklearn e.g. in VarianceThreshold class
         check_is_fitted(self)
         # Check for correlations >= threshold
@@ -48,7 +48,7 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
 
         return mask
 
-    def fit(self, X, y=None):
+    def fit(self, X: npt.ArrayLike, y: npt.ArrayLike = None):
         # first validate data
         X = validate_data(self, X, ensure_min_features=2)
         # Define n_features
@@ -73,7 +73,7 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
     def __init__(self, threshold: float = 0.2):
         self.threshold = threshold  # For future implementation based on threshold
 
-    def fit(self, X, y=None):
+    def fit(self, X: npt.ArrayLike, y: npt.ArrayLike = None):
         # first validate data
         # X = validate_data(self, X, ensure_min_features=2, ensure_all_finite=False)
         X = self._check_data_validity(X)
@@ -85,7 +85,7 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
 
         return self
 
-    def transform(self, X):
+    def transform(self, X: npt.ArrayLike) -> npt.ArrayLike:
         # Check fitted as used by sklearn e.g. in VarianceThreshold class
         check_is_fitted(self)
         # validate data
@@ -100,14 +100,14 @@ class MissingValuesRemover(TransformerMixin, BaseEstimator):
             X = X[mask]
         return X
 
-    def _check_data_validity(self, X):
+    def _check_data_validity(self, X: npt.ArrayLike) -> npt.ArrayLike:
         """Check if the data set exclusively consists of missing or infinite values.
 
         Args:
-            X (np.ndarray): Input data to check.
+            X (npt.ArrayLike): Input data to check.
 
         Returns:
-            np.ndarray: dataset if not completely invalid.
+            npt.ArrayLike: dataset if not completely invalid.
         """
         not_finite = ~np.isfinite(X)
         if not_finite.sum() == X.size:
@@ -177,7 +177,7 @@ class RDKit2DScaler(TransformerMixin, BaseEstimator):
         """
         self.skewness_threshold = skewness_threshold
 
-    def fit(self, X, y=None):
+    def fit(self, X: npt.ArrayLike, y: npt.ArrayLike = None):
         # Define n_features and training samples
         self.n_features_in_ = X.shape[1]
         self.n_train_samples_ = X.shape[0]
@@ -191,7 +191,7 @@ class RDKit2DScaler(TransformerMixin, BaseEstimator):
             raise ValueError("Features could not be transformed")
         return self
 
-    def transform(self, X):
+    def transform(self, X: npt.ArrayLike) -> npt.ArrayLike:
         # Check fitted as used by sklearn e.g. in VarianceThreshold class
         check_is_fitted(self)
         # Run transformation
