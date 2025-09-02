@@ -35,7 +35,7 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
         """
         self.threshold = threshold
 
-    def _get_support_mask(self) -> npt.ArrayLike[bool]:
+    def _get_support_mask(self) -> npt.ArrayLike:
         # Check fitted as used by sklearn e.g. in VarianceThreshold class
         check_is_fitted(self)
         # Check for correlations >= threshold
