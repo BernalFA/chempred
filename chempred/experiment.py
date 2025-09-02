@@ -51,7 +51,7 @@ class ClassificationExplorer(BaseExplorer):
             ml_algorithms: Union[list, Literal["all"]] = "all",
             balancing_samplers: Optional[Union[list, Literal["all"]]] = "all",
             mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
-            preprocessing: bool = True,  # automatically turned off if fingerprints
+            preprocessing: Optional[Literal["StandardScaler", "RDKit2DScaler"]] = None,
             random_state: int = 21,
             n_jobs: int = 1,
             scoring: Optional[list] = None,
@@ -67,9 +67,10 @@ class ClassificationExplorer(BaseExplorer):
             mol_transformers (list | 'all' | None, optional): molecular transformers
                     to include in exploration. Defaults to "all" (include all the
                     implemented transformers).
-            preprocessing (bool, optional): if True, a data preprocessing pipeline will
-                    be applied before training the model. Defaults to True. Only
-                    applicable for molecular descriptors.
+            preprocessing ("StandardScaler" | "RDKit2DScaler" | None, optional): data
+                    preprocessing applied before training the model. Defaults to `None`.
+                    If molecular transformation to fingerprints, `preprocessing` will be
+                    ignored.
             n_jobs (int, optional): number of cpu cores for pipeline processing (used
                     on algorithms that allows multiprocessing). Defaults to 1.
             scoring (list | None, optional): names given to the scoring functions
@@ -147,9 +148,9 @@ class ClassificationExplorer(BaseExplorer):
                     self._last_config = SimpleConfig(algorithm, sampler, transformer)
                     # print(self._last_config)
                     if transformer[0] != "MolecularDescriptorTransformer":
-                        self.preprocessing = False
+                        self._from_descriptors = False
                     else:
-                        self.preprocessing = True
+                        self._from_descriptors = True
 
                     pipe = self._create_pipeline()
                     self._data_pipelines.append(pipe)
@@ -277,7 +278,7 @@ class ClassificationExplorer(BaseExplorer):
             attr["balancing_samplers"] = [est[1] for est in self.balancing_samplers]
         if self.mol_transformers != MOL_TRANSFORMERS:
             attr["mol_transformers"] = [est[1] for est in self.mol_transformers]
-        if self.preprocessing is False:
+        if self.preprocessing is not None:
             attr["preprocessing"] = self.preprocessing
         if self.random_state != 21:
             attr["random_state"] = self.random_state
@@ -346,7 +347,7 @@ class RegressionExplorer(BaseExplorer):
             self,
             ml_algorithms: Union[list, Literal["all"]] = "all",
             mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
-            preprocessing: bool = True,  # automatically turned off if fingerprints
+            preprocessing: Optional[Literal["StandardScaler", "RDKit2DScaler"]] = None,
             random_state: int = 21,
             n_jobs: int = 1,
             scoring: Optional[list] = None,
@@ -359,9 +360,10 @@ class RegressionExplorer(BaseExplorer):
             mol_transformers (list | 'all' | None, optional): molecular transformers
                     to include in exploration. Defaults to "all" (include all the
                     implemented transformers).
-            preprocessing (bool, optional): if True, a data preprocessing pipeline will
-                    be applied before training the model. Defaults to True. Only
-                    applicable for molecular descriptors.
+            preprocessing ("StandardScaler" | "RDKit2DScaler" | None, optional): data
+                    preprocessing applied before training the model. Defaults to `None`.
+                    If molecular transformation to fingerprints, `preprocessing` will be
+                    ignored.
             n_jobs (int, optional): number of cpu units for pipeline processing (used
                     on algorithms that allows multiprocessing). Defaults to 1.
             scoring (list | None, optional): names given to the scoring functions
@@ -439,9 +441,9 @@ class RegressionExplorer(BaseExplorer):
                     )
                     # print(self._last_config)
                     if transformer[0] != "MolecularDescriptorTransformer":
-                        self.preprocessing = False
+                        self._from_descriptors = False
                     else:
-                        self.preprocessing = True
+                        self._from_descriptors = True
 
                     pipe = self._create_pipeline()
                     self._data_pipelines.append(pipe)
@@ -551,7 +553,7 @@ class RegressionExplorer(BaseExplorer):
             attr["ml_algorithms"] = [est[1] for est in self.ml_algorithms]
         if self.mol_transformers != MOL_TRANSFORMERS:
             attr["mol_transformers"] = [est[1] for est in self.mol_transformers]
-        if self.preprocessing is False:
+        if self.preprocessing is not None:
             attr["preprocessing"] = self.preprocessing
         if self.random_state != 21:
             attr["random_state"] = self.random_state
