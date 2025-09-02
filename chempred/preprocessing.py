@@ -54,6 +54,9 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
 
         return self
 
+    def get_feature_names_out(self, input_features=None):
+        return super().get_feature_names_out(input_features)
+
 
 class MissingValuesRemover(TransformerMixin, BaseEstimator):
     """Sklearn compatible transformer to remove features containing missing or infinite
