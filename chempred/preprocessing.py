@@ -96,7 +96,10 @@ class MissingValuesRemover(SelectorMixin, BaseEstimator):
         # X = validate_data(self, X, ensure_min_features=2, ensure_all_finite=False)
         X = self._check_data_validity(X)
         # Remove NaN and Inf
-        X = X[:, self.is_finite]
+        if hasattr(X, "iloc"):
+            X = X.iloc[:, self.is_finite]
+        else:
+            X = X[:, self.is_finite]
         # in case of test data, check for additional missing or infinite values
         if not np.isfinite(X).all():
             # Remove compounds with conflicting values (NaN or Inf)
@@ -114,7 +117,11 @@ class MissingValuesRemover(SelectorMixin, BaseEstimator):
             npt.ArrayLike: dataset if not completely invalid.
         """
         not_finite = ~np.isfinite(X)
-        if not_finite.sum() == X.size:
+        if hasattr(not_finite, "columns"):
+            total_sum = not_finite.sum().sum()
+        else:
+            total_sum = not_finite.sum()
+        if total_sum == X.size:
             raise ValueError("Data set contains only missing and/or infinite values.")
         else:
             X = validate_data(self, X, ensure_min_features=2, ensure_all_finite=False)
