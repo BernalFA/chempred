@@ -5,11 +5,12 @@ Module to define available evaluation metrics derived from sklearn.
 """
 import numpy as np
 import numpy.typing as npt
-from sklearn.metrics import precision_recall_curve, auc, fbeta_score
+from sklearn.metrics import average_precision_score, fbeta_score
 
 
 def prc_auc_score(y_true: npt.ArrayLike, y_score: npt.ArrayLike) -> float:
-    """Calculate PRC AUC for given dataset.
+    """Calculate PRC AUC for given dataset using the average_precision_score from
+    sklearn.
 
     Args:
         y_true (npt.ArrayLike): true labels.
@@ -19,8 +20,7 @@ def prc_auc_score(y_true: npt.ArrayLike, y_score: npt.ArrayLike) -> float:
     Returns:
         float: PRC AUC value
     """
-    precision, recall, _ = precision_recall_curve(y_true, y_score)
-    return auc(recall, precision)
+    return average_precision_score(y_true, y_score)
 
 
 def f0_5_score(y_true: npt.ArrayLike, y_pred: npt.ArrayLike) -> float:
