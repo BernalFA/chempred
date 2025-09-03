@@ -64,7 +64,7 @@ class BaseExplorer(ABC):
                     Functions (CDFs) defined by Novartis some years ago and made
                     available in the `descriptastorus` package. There are CDFs for 200
                     descriptors (out of 217 in RDKit 2025). Thus, descriptors without
-                    CDF in `descriptastorus` are scaled using StandardScaler.
+                    CDF in `descriptastorus` are scaled using MinMaxScaler.
             n_jobs (int, optional): number of cpu units for pipeline processing (used
                     on algorithms that allows multiprocessing). Defaults to 1.
             scoring (list | None, optional): names given to the scoring functions
