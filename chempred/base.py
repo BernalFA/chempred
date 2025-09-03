@@ -170,9 +170,12 @@ class BaseExplorer(ABC):
                     )
             if (self.preprocessing is not None) and self._from_descriptors:
                 preprocess = [
-                    ("MissingValuesRemover", MissingValuesRemover()),
-                    ("VarianceThreshold", VarianceThreshold()),
-                    ("RemoveCorrelated", RemoveCorrelated()),
+                    ("MissingValuesRemover",
+                     MissingValuesRemover().set_output(transform="pandas")),
+                    ("VarianceThreshold",
+                     VarianceThreshold().set_output(transform="pandas")),
+                    ("RemoveCorrelated",
+                     RemoveCorrelated().set_output(transform="pandas")),
                 ]
                 if self.preprocessing == "StandardScaler":
                     scaler = (self.preprocessing, StandardScaler())
