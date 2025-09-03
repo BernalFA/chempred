@@ -93,6 +93,8 @@ class MissingValuesRemover(SelectorMixin, BaseEstimator):
         return self
 
     def transform(self, X: npt.ArrayLike) -> npt.ArrayLike:
+        """Specific transform method to avoid failure for detection of empty values by
+        sklearn."""
         # Check fitted as used by sklearn e.g. in VarianceThreshold class
         check_is_fitted(self)
         # validate data
@@ -155,6 +157,22 @@ def shift_log_transform(values: npt.ArrayLike) -> npt.ArrayLike:
 
 
 class RDKit2DNovartisScaler(TransformerMixin, BaseEstimator):
+    """Sklearn compatible transformer to scale features using a Cumulative Distribution
+    Function (CDF) for each descriptor as determined by Novartis in 2018 and implemented
+    in the `descriptastorus` package. The original implementation accounts for 200 RDKit
+    descriptors. The rest 17 descriptors are scaled using sklearn `MinMaxScaler`.
+
+    ```{important}
+    This transformer requires datasets to be Pandas Dataframes. Columns must be in
+    agreement with the actual RDKit descriptor names.
+    ```
+
+    Example:
+        ```python
+        scaler = RDKit2DNovartisScaler()
+        X_scaled = scaler.fit_transform(X)
+        ```
+    """
 
     def __init__(self):
         # Retrieve scipy functions
@@ -202,7 +220,16 @@ class RDKit2DNovartisScaler(TransformerMixin, BaseEstimator):
             input_features = np.array(input_features)
         return input_features
 
-    def _get_functions(self):
+    def _get_functions(self) -> dict:
+        """Call to the CDFs defined in `rdNormalizedDescriptors` within the
+        `descriptastorus.descriptors` module.
+
+        Copyright (c) 2018, Novartis Institutes for BioMedical Research Inc.
+        All rights reserved.
+
+        Returns:
+            dict: CDF per RDKit descriptor.
+        """
         cdfs = {}
 
         for name, (dist, params, minV, maxV, avg, std) in dists.dists.items():
