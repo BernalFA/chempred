@@ -17,7 +17,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.preprocessing import StandardScaler
 from chempred.preprocessing import (
-    RemoveCorrelated, MissingValuesRemover, RDKit2DScaler
+    RemoveCorrelated, MissingValuesRemover, RDKit2DNovartisScaler
 )
 from chempred.utils import add_timing
 
@@ -149,7 +149,7 @@ class BaseExplorer(ABC):
             steps = [
                 ("SmilesToMolTransformer", SmilesToMolTransformer()),
                 ("Standardizer", Standardizer()),
-                (transformer[0], transformer[1]()),
+                (transformer[0], transformer[1]().set_output(transform="pandas")),
             ]
         # if not molecular transformer, create ML pipeline
         else:
@@ -177,7 +177,7 @@ class BaseExplorer(ABC):
                 if self.preprocessing == "StandardScaler":
                     scaler = (self.preprocessing, StandardScaler())
                 elif self.preprocessing == "RDKit2DScaler":
-                    scaler = (self.preprocessing, RDKit2DScaler())
+                    scaler = (self.preprocessing, RDKit2DNovartisScaler())
                 else:
                     raise NotImplementedError(f"{self.preprocessing} not implemented")
                 preprocess.append(scaler)
