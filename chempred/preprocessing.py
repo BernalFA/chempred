@@ -7,8 +7,11 @@ threshold and removal of missing values.
 
 import numpy as np
 import numpy.typing as npt
-from sklearn.base import BaseEstimator
+from descriptastorus.descriptors import dists
+from scipy import stats
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.feature_selection import SelectorMixin
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.utils.validation import check_is_fitted, validate_data
 
 
@@ -149,3 +152,89 @@ def shift_log_transform(values: npt.ArrayLike) -> npt.ArrayLike:
         shifted = values
     transformed = np.log1p(shifted)
     return transformed
+
+
+class RDKit2DNovartisScaler(TransformerMixin, BaseEstimator):
+
+    def __init__(self):
+        # Retrieve scipy functions
+        self.functions = self._get_functions()
+
+    def fit(self, X: npt.ArrayLike, y: npt.ArrayLike = None):
+        # Verify is Pandas (does not work without column names)
+        self._validate_is_pandas(X)
+        # Define n_features and training samples
+        self.n_features_in_ = X.shape[1]
+        self.n_train_samples_ = X.shape[0]
+        self.feature_names_in_ = X.columns.values
+
+        # Store scalers for features without cdf
+        self._other_scalers = {}
+        for col in X.columns:
+            if col not in self.functions.keys():
+                self._other_scalers[col] = MinMaxScaler().fit(X[[col]])
+
+        return self
+
+    def transform(self, X: npt.ArrayLike) -> npt.ArrayLike:
+        # Check fitted as used by sklearn e.g. in VarianceThreshold class
+        check_is_fitted(self)
+        # Verify array is Pandas Dataframe
+        self._validate_is_pandas(X)
+        # Run transformation
+        features = []
+        for col in X.columns:
+            if col in self.functions.keys():
+                norm = self.functions[col](X[[col]])
+                # print("in", norm.shape)
+            else:
+                norm = self._other_scalers[col].transform(X[[col]])
+                # print("out", norm.shape)
+            features.append(norm)
+        X = np.hstack(features)
+        return X
+
+    def get_feature_names_out(self, input_features=None):
+        check_is_fitted(self)
+        if input_features is None:
+            input_features = self.feature_names_in_
+        else:
+            input_features = np.array(input_features)
+        return input_features
+
+    def _get_functions(self):
+        cdfs = {}
+
+        for name, (dist, params, minV, maxV, avg, std) in dists.dists.items():
+            arg = params[:-2]
+            loc = params[-2]
+            scale = params[-1]
+
+            if dist in ['gilbrat', 'gibrat']:
+                # fix change in scikit learn
+                if hasattr(stats, 'gilbrat'):
+                    dist = 'gilbrat'
+                else:
+                    dist = 'gibrat'
+
+            if dist in ['gilbrat', 'gibrat']:
+                # fix change in scikit learn
+                if hasattr(stats, 'gilbrat'):
+                    dist = 'gilbrat'
+                else:
+                    dist = 'gibrat'
+
+            dist = getattr(stats, dist)
+
+            # make the cdf with the parameters
+            def cdf(v, dist=dist, arg=arg, loc=loc, scale=scale, minV=minV, maxV=maxV):
+                v = dist.cdf(np.clip(v, minV, maxV), loc=loc, scale=scale, *arg)
+                return np.clip(v, 0., 1.)
+
+            cdfs[name] = cdf
+
+        return cdfs
+
+    def _validate_is_pandas(self, X):
+        if not hasattr(X, "columns"):
+            raise TypeError("Given array is not a Pandas DataFrame")
