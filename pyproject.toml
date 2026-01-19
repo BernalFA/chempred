@@ -26,7 +26,7 @@ dependencies = [
   "tqdm",
   "lightgbm==4.6",
   "xgboost==3.0",
-  "git+https://github.com/bp-kelley/descriptastorus"
+  "descriptastorus @ git+https://github.com/bp-kelley/descriptastorus"
 ]
 
 [project.urls]
