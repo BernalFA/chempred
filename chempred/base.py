@@ -82,7 +82,6 @@ class BaseExplorer(ABC):
         # self._set_estimators() TO SET UP IN SUBCLASS
         self.scorers = self._set_scoring_functions(scoring)
         self._from_descriptors = False
-        self._last_config = None
 
     @abstractmethod
     def evaluate(self, X_train, X_test, y_train, y_test):
@@ -118,9 +117,8 @@ class BaseExplorer(ABC):
         X_train: npt.ArrayLike,
         X_test: npt.ArrayLike,
         y_train: npt.ArrayLike,
-        y_test: npt.ArrayLike
+        y_test: npt.ArrayLike,
     ) -> np.ndarray:
-
         """Fit pipeline on training data and calculate performance on test data.
 
         Args:
@@ -176,12 +174,18 @@ class BaseExplorer(ABC):
                     )
             if (self.preprocessing is not None) and self._from_descriptors:
                 preprocess = [
-                    ("MissingValuesRemover",
-                     MissingValuesRemover().set_output(transform="pandas")),
-                    ("VarianceThreshold",
-                     VarianceThreshold().set_output(transform="pandas")),
-                    ("RemoveCorrelated",
-                     RemoveCorrelated().set_output(transform="pandas")),
+                    (
+                        "MissingValuesRemover",
+                        MissingValuesRemover().set_output(transform="pandas"),
+                    ),
+                    (
+                        "VarianceThreshold",
+                        VarianceThreshold().set_output(transform="pandas")
+                    ),
+                    (
+                        "RemoveCorrelated",
+                        RemoveCorrelated().set_output(transform="pandas")
+                    ),
                 ]
                 if self.preprocessing == "StandardScaler":
                     scaler = (self.preprocessing, StandardScaler())
@@ -311,10 +315,7 @@ class BaseExplorer(ABC):
         _check_fitted(self)
         scores = self._score_from_predictor(self.best_estimator_, X, y)
         cols = [scorer[0] for scorer in self.scorers]
-        return {
-            key: float(val)
-            for key, val in zip(cols, scores)
-        }
+        return {key: float(val) for key, val in zip(cols, scores)}
 
     def _check_metrics_for_selection(self, metrics: Union[list, str]) -> list:
         """Check for correctness the given method for selection of the best pipeline.
