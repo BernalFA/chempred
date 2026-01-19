@@ -4,6 +4,7 @@ transformers (as implemented in sklearn, imblearn, and scikit-mol, respectively)
 
 @author: Dr. Freddy A. Bernal
 """
+
 from typing import Literal
 
 from chempred.config.functions import get_ml_estimators, all_estimators_in_package
@@ -12,6 +13,7 @@ from chempred.config.settings import Defaults
 
 DEFAULT_ESTIMATORS = Defaults(
     classifiers=(
+        "DecisionTreeClassifier",
         "DummyClassifier",
         "GaussianNB",
         "GaussianProcessClassifier",
@@ -25,6 +27,7 @@ DEFAULT_ESTIMATORS = Defaults(
         "LGBMClassifier",
     ),
     regressors=(
+        "DecisionTreeRegressor",
         "GaussianProcessRegressor",
         "KNeighborsRegressor",
         "LinearRegression",
@@ -37,13 +40,15 @@ DEFAULT_ESTIMATORS = Defaults(
     ),
     samplers=(
         "RandomUnderSampler",
+        "TomekLinks",
+        "ADASYN",
         "SMOTE",
-    )
+    ),
 )
 
 
 def get_available_estimators(
-        category: Literal["classifiers", "regressors", "samplers", "mol_transformers"]
+    category: Literal["classifiers", "regressors", "samplers", "mol_transformers"],
 ) -> list[tuple]:
     """Provide a list of estimators according to the given category.
 
