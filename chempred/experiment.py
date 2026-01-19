@@ -10,8 +10,10 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from imblearn.pipeline import Pipeline
+
 try:
     from IPython import get_ipython
+
     if get_ipython():
         if "IPKernelApp" in get_ipython().config:
             from tqdm.notebook import tqdm
@@ -47,15 +49,15 @@ class ClassificationExplorer(BaseExplorer):
     """
 
     def __init__(
-            self,
-            ml_algorithms: Union[list, Literal["all"]] = "all",
-            balancing_samplers: Optional[Union[list, Literal["all"]]] = "all",
-            mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
-            preprocessing: Optional[Literal["StandardScaler", "RDKit2DScaler"]] = None,
-            random_state: int = 21,
-            n_jobs: int = 1,
-            scoring: Optional[list] = None,
-            select_best_by: str = "average"
+        self,
+        ml_algorithms: Union[list, Literal["all"]] = "all",
+        balancing_samplers: Optional[Union[list, Literal["all"]]] = "all",
+        mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
+        preprocessing: Optional[Literal["StandardScaler", "RDKit2DScaler"]] = None,
+        random_state: int = 21,
+        n_jobs: int = 1,
+        scoring: Optional[list] = None,
+        select_best_by: str = "average",
     ):
         """
         Args:
@@ -93,7 +95,7 @@ class ClassificationExplorer(BaseExplorer):
             preprocessing=preprocessing,
             random_state=random_state,
             n_jobs=n_jobs,
-            scoring=scoring
+            scoring=scoring,
         )
         self.balancing_samplers = balancing_samplers
         self._select_best_by = self._check_metrics_for_selection(select_best_by)
@@ -109,19 +111,24 @@ class ClassificationExplorer(BaseExplorer):
         return f"{name}({attr_str})"
 
     def evaluate(
-            self,
-            X_train: npt.ArrayLike,
-            X_test: npt.ArrayLike,
-            y_train: npt.ArrayLike,
-            y_test: npt.ArrayLike
+        self,
+        X_train: npt.ArrayLike,
+        X_test: npt.ArrayLike,
+        y_train: npt.ArrayLike,
+        y_test: npt.ArrayLike,
     ):
         """Sequentially create and train pipelines with the training dataset, and assess
-        performance using the test dataset. During execution, private attributes
-        `_data_pipelines` (containing all the created pipelines for data preprocessing
-        and ML modeling) and `_steps` (containing the steps for the full pipeline
-        including molecular transformations) are created. After iteration, the best
-        pipeline is chosen, making available the attributes `best_estimator_` and
-        `best_index_`.
+        performance using the test dataset. During execution, the following private
+        attributes are set:
+        - `_data_pipelines`: list containing all the created pipelines for data
+                             preprocessing and ML modeling.
+        - `_steps`: list containing the steps for the full pipeline including molecular
+                    transformations.
+        After evaluation is complete, the following attributes are set:
+        - `results_`: pd.DataFrame summarizing the results from all the evaluated
+                      pipelines.
+        - `best_estimator_`: best pipeline chosen according to `select_best_by`.
+        - `best_index_`: index of the best pipeline (in `results_`).
 
         Args:
             X_train (npt.ArrayLike): training smiles / features
@@ -137,16 +144,17 @@ class ClassificationExplorer(BaseExplorer):
         if self.mol_transformers is not None:
             columns.insert(2, "Molecular Transformer")
             results = pd.DataFrame(columns=columns)
-            for transformer in tqdm(self.mol_transformers,
-                                    desc="Overall progress"):
+            for transformer in tqdm(self.mol_transformers, desc="Overall progress"):
                 mol_pipe = self._create_pipeline(transformer)
                 X_train_trans = mol_pipe.fit_transform(X_train)
                 X_test_trans = mol_pipe.transform(X_test)
 
                 for algorithm, sampler in product(
-                    self.ml_algorithms, self.balancing_samplers,
+                    self.ml_algorithms,
+                    self.balancing_samplers,
                     desc=f"Models with {transformer[0].replace("Transformer", "")}",
-                    position=1, leave=False
+                    position=1,
+                    leave=False,
                 ):
                     if algorithm[0] == "DummyClassifier" and sampler[0] is not None:
                         continue
@@ -171,8 +179,8 @@ class ClassificationExplorer(BaseExplorer):
         else:
             results = pd.DataFrame(columns=columns)
             for algorithm, sampler in product(
-                self.ml_algorithms, self.balancing_samplers,
-                desc="Models", position=1, leave=False
+                self.ml_algorithms, self.balancing_samplers, desc="Models", position=1,
+                leave=False
             ):
                 if algorithm[0] == "DummyClassifier" and sampler[0] is not None:
                     continue
@@ -192,10 +200,7 @@ class ClassificationExplorer(BaseExplorer):
             delattr(self, "_last_config")
 
     def _score_from_predictor(
-            self,
-            estimator: Pipeline,
-            X: npt.ArrayLike,
-            y: npt.ArrayLike
+        self, estimator: Pipeline, X: npt.ArrayLike, y: npt.ArrayLike
     ) -> np.ndarray:
         """Assess performance of a given estimator on the provided dataset using chosen
         scoring metrics.
@@ -289,9 +294,9 @@ class ClassificationExplorer(BaseExplorer):
             attr["random_state"] = self.random_state
         if self.n_jobs != 1:
             attr["n_jobs"] = self.n_jobs
-        if self.scorers != [
-            ("balanced_accuracy", SCORING.classification["balanced_accuracy"])
-        ]:
+        if self.scorers != [(
+            "balanced_accuracy", SCORING.classification["balanced_accuracy"]
+        )]:
             attr["scoring"] = [scorer[0] for scorer in self.scorers]
 
         return attr if attr else None
@@ -325,9 +330,9 @@ class ClassificationExplorer(BaseExplorer):
                     err.add_note("print(get_scorer_names())")
                     raise
         elif scoring is None:
-            scorers = [
-                ("balanced_accuracy", SCORING.classification["balanced_accuracy"])
-            ]
+            scorers = [(
+                "balanced_accuracy", SCORING.classification["balanced_accuracy"]
+            )]
         else:
             raise ValueError("'scoring' accept as inputs lists or None")
         return scorers
@@ -349,14 +354,14 @@ class RegressionExplorer(BaseExplorer):
     """
 
     def __init__(
-            self,
-            ml_algorithms: Union[list, Literal["all"]] = "all",
-            mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
-            preprocessing: Optional[Literal["StandardScaler", "RDKit2DScaler"]] = None,
-            random_state: int = 21,
-            n_jobs: int = 1,
-            scoring: Optional[list] = None,
-            select_best_by: str = "average"
+        self,
+        ml_algorithms: Union[list, Literal["all"]] = "all",
+        mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
+        preprocessing: Optional[Literal["StandardScaler", "RDKit2DScaler"]] = None,
+        random_state: int = 21,
+        n_jobs: int = 1,
+        scoring: Optional[list] = None,
+        select_best_by: str = "average",
     ):
         """
         Args:
@@ -391,7 +396,7 @@ class RegressionExplorer(BaseExplorer):
             preprocessing=preprocessing,
             random_state=random_state,
             n_jobs=n_jobs,
-            scoring=scoring
+            scoring=scoring,
         )
         self._select_best_by = self._check_metrics_for_selection(select_best_by)
         self._set_estimators()
@@ -406,19 +411,24 @@ class RegressionExplorer(BaseExplorer):
         return f"{name}({attr_str})"
 
     def evaluate(
-            self,
-            X_train: npt.ArrayLike,
-            X_test: npt.ArrayLike,
-            y_train: npt.ArrayLike,
-            y_test: npt.ArrayLike
+        self,
+        X_train: npt.ArrayLike,
+        X_test: npt.ArrayLike,
+        y_train: npt.ArrayLike,
+        y_test: npt.ArrayLike,
     ):
         """Sequentially create and train pipelines with the training dataset, and assess
-        performance using the test dataset. During execution, private attributes
-        `_data_pipelines` (containing all the created pipelines for data preprocessing
-        and ML modeling) and `_steps` (containing the steps for the full pipeline
-        including molecular transformations) are created. After iteration, the best
-        pipeline is chosen, making available the attributes `best_estimator_` and
-        `best_index_`.
+        performance using the test dataset. During execution, the following private
+        attributes are set:
+        - `_data_pipelines`: list containing all the created pipelines for data
+                             preprocessing and ML modeling.
+        - `_steps`: list containing the steps for the full pipeline including molecular
+                    transformations.
+        After evaluation is complete, the following attributes are set:
+        - `results_`: pd.DataFrame summarizing the results from all the evaluated
+                      pipelines.
+        - `best_estimator_`: best pipeline chosen according to `select_best_by`.
+        - `best_index_`: index of the best pipeline (in `results_`).
 
         Args:
             X_train (npt.ArrayLike): training smiles / features
@@ -434,8 +444,7 @@ class RegressionExplorer(BaseExplorer):
         if self.mol_transformers is not None:
             columns.insert(1, "Molecular Transformer")
             results = pd.DataFrame(columns=columns)
-            for transformer in tqdm(self.mol_transformers,
-                                    desc="Overall progress"):
+            for transformer in tqdm(self.mol_transformers, desc="Overall progress"):
                 mol_pipe = self._create_pipeline(transformer)
                 X_train_trans = mol_pipe.fit_transform(X_train)
                 X_test_trans = mol_pipe.transform(X_test)
@@ -443,11 +452,11 @@ class RegressionExplorer(BaseExplorer):
                 for algorithm in tqdm(
                     self.ml_algorithms,
                     desc=f"Models with {transformer[0].replace("Transformer", "")}",
-                    position=1, leave=False
+                    position=1,
+                    leave=False,
                 ):
                     self._last_config = SimpleConfig(
-                        estimator=algorithm,
-                        transformer=transformer
+                        estimator=algorithm, transformer=transformer
                     )
                     # print(self._last_config)
                     if transformer[0] != "MolecularDescriptorTransformer":
@@ -469,8 +478,7 @@ class RegressionExplorer(BaseExplorer):
         else:
             results = pd.DataFrame(columns=columns)
             for algorithm in tqdm(
-                self.ml_algorithms,
-                desc="Models", position=1, leave=False
+                self.ml_algorithms, desc="Models", position=1, leave=False
             ):
                 self._last_config = SimpleConfig(algorithm)
                 pipe = self._create_pipeline()
@@ -488,10 +496,7 @@ class RegressionExplorer(BaseExplorer):
             delattr(self, "_last_config")
 
     def _score_from_predictor(
-            self,
-            estimator: Pipeline,
-            X: npt.ArrayLike,
-            y: npt.ArrayLike
+        self, estimator: Pipeline, X: npt.ArrayLike, y: npt.ArrayLike
     ) -> np.ndarray:
         """Assess performance of given estimator on the provided dataset using selected
         scoring metrics.
