@@ -209,7 +209,7 @@ class BaseExplorer(ABC):
             params["random_state"] = self.random_state
         if "n_jobs" in estimator().get_params().keys():
             params["n_jobs"] = self.n_jobs
-        if estimator.__name__ == "LGBMClassifier":
+        if estimator.__name__ in ["LGBMClassifier", "LGBMRegressor"]:
             params["verbose"] = -1
             return estimator(**params)
         return estimator()
