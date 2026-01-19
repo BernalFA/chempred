@@ -14,8 +14,8 @@ def prc_auc_score(y_true: npt.ArrayLike, y_score: npt.ArrayLike) -> float:
 
     Args:
         y_true (npt.ArrayLike): true labels.
-        y (npt.ArrayLike): target scores as probabilities (from predict_proba or
-                           decision_function in sklearn estimators).
+        y_score (npt.ArrayLike): target scores as probabilities (from predict_proba or
+                                 decision_function in sklearn estimators).
 
     Returns:
         float: PRC AUC value
@@ -28,7 +28,7 @@ def f0_5_score(y_true: npt.ArrayLike, y_pred: npt.ArrayLike) -> float:
 
     Args:
         y_true (npt.ArrayLike): true labels.
-        y (npt.ArrayLike): predicted target values returned by classifier.
+        y_pred (npt.ArrayLike): predicted target values returned by classifier.
 
     Returns:
         float: f0.5 score
@@ -41,7 +41,7 @@ def f2_score(y_true: npt.ArrayLike, y_pred: npt.ArrayLike) -> float:
 
     Args:
         y_true (npt.ArrayLike): true labels.
-        y (npt.ArrayLike): predicted target values returned by classifier.
+        y_pred (npt.ArrayLike): predicted target values returned by classifier.
 
     Returns:
         float: f2 score
