@@ -82,6 +82,7 @@ class BaseExplorer(ABC):
         # self._set_estimators() TO SET UP IN SUBCLASS
         self.scorers = self._set_scoring_functions(scoring)
         self._from_descriptors = False
+        self._last_config = None
 
     @abstractmethod
     def evaluate(self, X_train, X_test, y_train, y_test):
