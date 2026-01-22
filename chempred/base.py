@@ -159,8 +159,7 @@ class BaseExplorer(ABC):
         """
         _check_fitted(self)
         scores = self._score_from_predictor(self.best_estimator_, X, y)
-        cols = [scorer[0] for scorer in self.scorers]
-        return {key: float(val) for key, val in zip(cols, scores)}
+        return scores
 
     @add_timing
     def _run_evaluation(
