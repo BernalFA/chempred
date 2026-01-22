@@ -10,6 +10,7 @@ from scikit_mol.conversions import SmilesToMolTransformer
 from scikit_mol.standardizer import Standardizer
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.preprocessing import StandardScaler
+
 from chempred.config import SimpleConfig
 from chempred.preprocessing import (
     RemoveCorrelated, MissingValuesRemover, RDKit2DNovartisScaler

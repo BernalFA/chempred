@@ -12,6 +12,7 @@ import numpy as np
 import numpy.typing as npt
 from imblearn.pipeline import Pipeline
 from sklearn.exceptions import NotFittedError
+
 from chempred.utils import add_timing
 
 
