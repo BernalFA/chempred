@@ -6,10 +6,8 @@ Module containing the Explorer classes, which enable perfoming exploratory exper
 
 from typing import Union, Literal, Optional
 
-import numpy as np
 import numpy.typing as npt
 import pandas as pd
-from imblearn.pipeline import Pipeline
 
 try:
     from IPython import get_ipython
@@ -102,9 +100,9 @@ class ClassificationExplorer(BaseExplorer):
             random_state=random_state,
             n_jobs=n_jobs,
             scoring=scoring,
+            select_best_by=select_best_by
         )
         self.balancing_samplers = balancing_samplers
-        self._select_best_by = self._check_metrics_for_selection(select_best_by)
         self._set_estimators()
 
     def __str__(self):
@@ -216,35 +214,6 @@ class ClassificationExplorer(BaseExplorer):
         self.results_ = pd.DataFrame(results)
         self._select_best_pipeline()
 
-    def _score_from_predictor(
-        self, estimator: Pipeline, X: npt.ArrayLike, y: npt.ArrayLike
-    ) -> np.ndarray:
-        """Assess performance of a given estimator on the provided dataset using chosen
-        scoring metrics.
-
-        Args:
-            estimator (Pipeline): pipeline containing an ML model
-            X (npt.ArrayLike): features
-            y (npt.ArrayLike): labels
-
-        Returns:
-            np.ndarray: performance scores
-        """
-        y_pred = estimator.predict(X)
-        try:
-            probs = estimator.predict_proba(X)[:, 1]
-        except AttributeError:
-            probs = estimator.decision_function(X)
-        calc_scores = {}
-        for scorer in self.scorers:
-            if scorer[0] not in ["roc_auc", "prc_auc"]:
-                value = scorer[1](y, y_pred)
-            else:
-                value = scorer[1](y, probs)
-            calc_scores[scorer[0]] = value
-
-        return calc_scores
-
     def _set_estimators(self):
         """Help to set all estimators from user input (attributes ml_algorithms,
         balancing_samplers, and mol_transformers set using required format).
@@ -266,29 +235,6 @@ class ClassificationExplorer(BaseExplorer):
             else:
                 custom_list = self._set_custom_estimators(method, full_list)
                 setattr(self, name, custom_list)
-
-    def _select_best_pipeline(self):
-        """Define best model from obtained performance metrics. Results are stored as
-        attributes best_index_ and best_estimator_
-        """
-        exclude = ["mcc", "cohen_kappa"]
-        scorers = [scorer[0] for scorer in self.scorers]
-        if isinstance(self._select_best_by, str) and self._select_best_by != "average":
-            sorting_df = self.results_[self._select_best_by].copy()
-        else:
-            results = self.results_.copy()
-            cols_selection = []
-            for name in scorers:
-                if name in exclude:
-                    results["n_" + name] = (results[name] + 1) / 2
-                    cols_selection.append("n_" + name)
-                else:
-                    cols_selection.append(name)
-            sorting_df = results[cols_selection].mean(axis=1)
-
-        self.best_index_ = sorting_df.sort_values(ascending=False).index[0]
-        steps = self._steps[self.best_index_]
-        self.best_estimator_ = Pipeline(steps)
 
     def _get_non_default_params(self) -> Optional[dict]:
         """Help to get custom attributes on defined instance to use in __str__
@@ -418,8 +364,8 @@ class RegressionExplorer(BaseExplorer):
             random_state=random_state,
             n_jobs=n_jobs,
             scoring=scoring,
+            select_best_by=select_best_by
         )
-        self._select_best_by = self._check_metrics_for_selection(select_best_by)
         self._set_estimators()
 
     def __str__(self):
@@ -520,29 +466,6 @@ class RegressionExplorer(BaseExplorer):
         self.results_ = pd.DataFrame(results)
         self._select_best_pipeline()
 
-    def _score_from_predictor(
-        self, estimator: Pipeline, X: npt.ArrayLike, y: npt.ArrayLike
-    ) -> np.ndarray:
-        """Assess performance of given estimator on the provided dataset using selected
-        scoring metrics.
-
-        Args:
-            estimator (Pipeline): pipeline containing an ML model
-            X (npt.ArrayLike): features
-            y (npt.ArrayLike): labels
-
-        Returns:
-            np.ndarray: performance scores
-        """
-        y_pred = estimator.predict(X)
-
-        calc_scores = {}
-        for scorer in self.scorers:
-            value = scorer[1](y, y_pred)
-            calc_scores[scorer[0]] = value
-
-        return calc_scores
-
     def _set_estimators(self):
         """Help to set all estimators from user input (attributes ml_algorithms
         and mol_transformers set using required format).
@@ -558,28 +481,6 @@ class RegressionExplorer(BaseExplorer):
             else:
                 custom_list = self._set_custom_estimators(method, full_list)
                 setattr(self, name, custom_list)
-
-    def _select_best_pipeline(self):
-        """Define best model from obtained performance metrics. Results are stored as
-        attributes best_index_ and best_estimator_
-        """
-        scorers = [scorer[0] for scorer in self.scorers]
-        if isinstance(self._select_best_by, str) and self._select_best_by != "average":
-            sorting_df = self.results_[self._select_best_by].copy()
-        else:
-            results = self.results_.copy()
-            cols_selection = []
-            for name in scorers:
-                if name == "r2":
-                    results["1-" + name] = 1 - results[name]
-                    cols_selection.append("1-" + name)
-                else:
-                    cols_selection.append(name)
-            sorting_df = results[cols_selection].mean(axis=1)
-
-        self.best_index_ = sorting_df.sort_values(ascending=True).index[0]
-        steps = self._steps[self.best_index_]
-        self.best_estimator_ = Pipeline(steps)
 
     def _get_non_default_params(self) -> Optional[dict]:
         """Help to get custom attributes on defined instance to use in __str__

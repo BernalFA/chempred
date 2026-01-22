@@ -45,6 +45,7 @@ class BaseExplorer(ABC):
         random_state: int = 21,
         n_jobs: int = 1,
         scoring: Optional[list] = None,
+        select_best_by: str = "average",
     ):
         """
         Args:
@@ -72,6 +73,12 @@ class BaseExplorer(ABC):
             scoring (list | None, optional): names given to the scoring functions
                     used during evaluation. Defaults to None assign scoring as balanced
                     accuracy.
+            select_best_by (str | list): mode of selection of best performing pipeline.
+                    The name of a particular metrics used in `scoring` can be used.
+                    Defaults to 'average', indicating that all the calculated metrics
+                    will be averaged and the highest average value will be used to
+                    define the best model. If a list is given, those metrics will be
+                    averaged.
         """
 
         self.ml_algorithms = ml_algorithms
@@ -83,6 +90,7 @@ class BaseExplorer(ABC):
         self._steps = []
         # self._set_estimators() TO SET UP IN SUBCLASS
         self.scorers = self._set_scoring_functions(scoring)
+        self._select_best_by = self._check_metrics_for_selection(select_best_by)
         self._from_descriptors = False
 
     @abstractmethod
@@ -94,11 +102,37 @@ class BaseExplorer(ABC):
         # finally _select_best_model
         pass
 
-    @abstractmethod
-    def _score_from_predictor(self, estimator, X, y):
-        """Required implementation for performance assessment"""
-        # any number of scoring functions used. It returns results as an array
-        pass
+    def _score_from_predictor(
+        self, estimator: Pipeline, X: npt.ArrayLike, y: npt.ArrayLike
+    ) -> dict:
+        """Assess performance of given estimator on the provided dataset using selected
+        scoring metrics.
+
+        Args:
+            estimator (Pipeline): pipeline containing an ML model
+            X (npt.ArrayLike): features
+            y (npt.ArrayLike): labels
+
+        Returns:
+            dict: performance scores
+        """
+        y_pred = estimator.predict(X)
+
+        if any(scorer[0] in ["roc_auc", "prc_auc"] for scorer in self.scorers):
+            try:
+                probs = estimator.predict_proba(X)[:, 1]
+            except AttributeError:
+                probs = estimator.decision_function(X)
+
+        calc_scores = {}
+        for scorer in self.scorers:
+            if scorer[0] not in ["roc_auc", "prc_auc"]:
+                value = scorer[1](y, y_pred)
+            else:
+                value = scorer[1](y, probs)
+            calc_scores[scorer[0]] = value
+
+        return calc_scores
 
     @abstractmethod
     def _set_estimators(self):
@@ -153,12 +187,30 @@ class BaseExplorer(ABC):
         """
         return list(pipe1.named_steps.items()) + list(pipe2.named_steps.items())
 
-    @abstractmethod
     def _select_best_pipeline(self):
-        """Define best model from performance metrics. Results are
-        stored as the attributes best_index_ and best_estimator_
+        """Define best model from obtained performance metrics. Results are stored as
+        attributes best_index_ and best_estimator_
         """
-        pass
+        scorers = [scorer[0] for scorer in self.scorers]
+        if isinstance(self._select_best_by, str) and self._select_best_by != "average":
+            sorting_df = self.results_[self._select_best_by].copy()
+        else:
+            results = self.results_.copy()
+            cols_selection = []
+            for name in scorers:
+                if name in ["mcc", "cohen_kappa"]:
+                    results["n_" + name] = (results[name] + 1) / 2
+                    cols_selection.append("n_" + name)
+                elif name == "r2":
+                    results["1-" + name] = 1 - results[name]
+                    cols_selection.append("1-" + name)
+                else:
+                    cols_selection.append(name)
+            sorting_df = results[cols_selection].mean(axis=1)
+
+        self.best_index_ = sorting_df.sort_values(ascending=False).index[0]
+        steps = self._steps[self.best_index_]
+        self.best_estimator_ = Pipeline(steps)
 
     def _set_custom_estimators(self, custom_methods: list, all_methods: list) -> list:
         """Iterate over custom_methods to assess whether the given estimator/method is
