@@ -102,6 +102,87 @@ class BaseExplorer(ABC):
         # finally _select_best_model
         pass
 
+    @abstractmethod
+    def _set_estimators(self):
+        """Check provided estimators or assign 'all' estimators available"""
+        # Important to set up CLASSIFIERS or REGRESSORS
+        # use _set_custom_estimators
+        # this method needs to be run at initialiation.
+        pass
+
+    @abstractmethod
+    def _set_scoring_functions(self, scoring: Optional[list]):
+        """Help define the scoring functions used during model evaluation"""
+        pass
+
+    @property
+    def best_score_(self) -> dict:
+        """Locate the scores of the best pipeline (using best_index_ as defined in
+        _select_best_model)
+
+        Returns:
+            dict: test scores obtained for the best pipeline
+        """
+        cols = [scorer[0] for scorer in self.scorers]
+        best_score = self.results_.loc[self.best_index_, cols]
+        return best_score.to_dict()
+
+    def predict(self, X: npt.ArrayLike) -> np.ndarray:
+        """Predict label/target value for given dataset X using the best pipeline from
+        the evaluate() method.
+
+        Args:
+            X (npt.ArrayLike): dataset for prediction (smiles or features).
+
+        Returns:
+            np.ndarray: predicted target values / labels
+        """
+        _check_fitted(self)
+        return self.best_estimator_.predict(X)
+
+    def score(self, X: npt.ArrayLike, y: npt.ArrayLike) -> dict:
+        """Evaluate the prediction performance of the best pipeline on the target
+        value (y) for the given dataset (X).
+
+        Args:
+            X (npt.ArrayLike): dataset for prediction (smiles or features).
+            y (npt.ArrayLike): target values / labels.
+
+        Returns:
+            dict: set of scores to assess performance of predictions.
+        """
+        _check_fitted(self)
+        scores = self._score_from_predictor(self.best_estimator_, X, y)
+        cols = [scorer[0] for scorer in self.scorers]
+        return {key: float(val) for key, val in zip(cols, scores)}
+
+    @add_timing
+    def _run_evaluation(
+        self,
+        X_train: npt.ArrayLike,
+        X_test: npt.ArrayLike,
+        y_train: npt.ArrayLike,
+        y_test: npt.ArrayLike,
+    ) -> np.ndarray:
+        """Fit pipeline on training data and calculate performance on test data.
+
+        Args:
+            X_train (npt.ArrayLike): training data or smiles
+            X_test (npt.ArrayLike): test data or smiles
+            y_train (npt.ArrayLike): training labels/target
+            y_test (npt.ArrayLike): test labels/target
+
+        Returns:
+            np.ndarray: performance scores on test data
+        """
+        pipe = self._data_pipelines[-1]
+        try:
+            pipe.fit(X_train, y_train)
+            scores = self._score_from_predictor(pipe, X_test, y_test)
+        except ValueError:
+            scores = {scorer[0]: np.nan for scorer in self.scorers}
+        return scores
+
     def _score_from_predictor(
         self, estimator: Pipeline, X: npt.ArrayLike, y: npt.ArrayLike
     ) -> dict:
@@ -133,59 +214,6 @@ class BaseExplorer(ABC):
             calc_scores[scorer[0]] = value
 
         return calc_scores
-
-    @abstractmethod
-    def _set_estimators(self):
-        """Check provided estimators or assign 'all' estimators available"""
-        # Important to set up CLASSIFIERS or REGRESSORS
-        # use _set_custom_estimators
-        # this method needs to be run at initialiation.
-        pass
-
-    @abstractmethod
-    def _set_scoring_functions(self, scoring: Optional[list]):
-        """Help define the scoring functions used during model evaluation"""
-        pass
-
-    @add_timing
-    def _run_evaluation(
-        self,
-        X_train: npt.ArrayLike,
-        X_test: npt.ArrayLike,
-        y_train: npt.ArrayLike,
-        y_test: npt.ArrayLike,
-    ) -> np.ndarray:
-        """Fit pipeline on training data and calculate performance on test data.
-
-        Args:
-            X_train (npt.ArrayLike): training data or smiles
-            X_test (npt.ArrayLike): test data or smiles
-            y_train (npt.ArrayLike): training labels/target
-            y_test (npt.ArrayLike): test labels/target
-
-        Returns:
-            np.ndarray: performance scores on test data
-        """
-        pipe = self._data_pipelines[-1]
-        try:
-            pipe.fit(X_train, y_train)
-            scores = self._score_from_predictor(pipe, X_test, y_test)
-        except ValueError:
-            scores = {scorer[0]: np.nan for scorer in self.scorers}
-        return scores
-
-    def _get_steps(self, pipe1: Pipeline, pipe2: Pipeline) -> list[tuple]:
-        """Unify steps of the pipelines for molecular transformation and data processing
-        and training.
-
-        Args:
-            pipe1 (Pipeline): molecular transformation pipeline.
-            pipe2 (Pipeline): ML training pipeline.
-
-        Returns:
-            list[tuple]: full sequence of steps followed.
-        """
-        return list(pipe1.named_steps.items()) + list(pipe2.named_steps.items())
 
     def _select_best_pipeline(self):
         """Define best model from obtained performance metrics. Results are stored as
@@ -250,47 +278,6 @@ class BaseExplorer(ABC):
             return True
         return False
 
-    @property
-    def best_score_(self) -> dict:
-        """Locate the scores of the best pipeline (using best_index_ as defined in
-        _select_best_model)
-
-        Returns:
-            dict: test scores obtained for the best pipeline
-        """
-        cols = [scorer[0] for scorer in self.scorers]
-        best_score = self.results_.loc[self.best_index_, cols]
-        return best_score.to_dict()
-
-    def predict(self, X: npt.ArrayLike) -> np.ndarray:
-        """Predict label/target value for given dataset X using the best pipeline from
-        the evaluate() method.
-
-        Args:
-            X (npt.ArrayLike): dataset for prediction (smiles or features).
-
-        Returns:
-            np.ndarray: predicted target values / labels
-        """
-        _check_fitted(self)
-        return self.best_estimator_.predict(X)
-
-    def score(self, X: npt.ArrayLike, y: npt.ArrayLike) -> dict:
-        """Evaluate the prediction performance of the best pipeline on the target
-        value (y) for the given dataset (X).
-
-        Args:
-            X (npt.ArrayLike): dataset for prediction (smiles or features).
-            y (npt.ArrayLike): target values / labels.
-
-        Returns:
-            dict: set of scores to assess performance of predictions.
-        """
-        _check_fitted(self)
-        scores = self._score_from_predictor(self.best_estimator_, X, y)
-        cols = [scorer[0] for scorer in self.scorers]
-        return {key: float(val) for key, val in zip(cols, scores)}
-
     def _check_metrics_for_selection(self, metrics: Union[list, str]) -> list:
         """Check for correctness the given method for selection of the best pipeline.
 
@@ -323,3 +310,16 @@ class BaseExplorer(ABC):
             raise ValueError(
                 f"{metrics} not in agreement with selected scoring functions."
             )
+
+    def _get_steps(self, pipe1: Pipeline, pipe2: Pipeline) -> list[tuple]:
+        """Unify steps of the pipelines for molecular transformation and data processing
+        and training.
+
+        Args:
+            pipe1 (Pipeline): molecular transformation pipeline.
+            pipe2 (Pipeline): ML training pipeline.
+
+        Returns:
+            list[tuple]: full sequence of steps followed.
+        """
+        return list(pipe1.named_steps.items()) + list(pipe2.named_steps.items())
