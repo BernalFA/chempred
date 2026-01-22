@@ -1,3 +1,10 @@
+"""
+Module containing utility functions for unified use during pipeline creation and
+evaluation.
+
+@author: Dr. Freddy A. Bernal
+"""
+
 from imblearn.pipeline import Pipeline
 from scikit_mol.conversions import SmilesToMolTransformer
 from scikit_mol.standardizer import Standardizer
