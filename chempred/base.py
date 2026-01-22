@@ -328,3 +328,49 @@ class BaseExplorer(ABC):
             list[tuple]: full sequence of steps followed.
         """
         return list(pipe1.named_steps.items()) + list(pipe2.named_steps.items())
+
+    def _get_non_default_params(self) -> list:
+        """Help to get custom attributes on defined instance to use in __str__
+
+        Returns:
+            list: non-default attributes as key:value pairs in string mode.
+        """
+        defaults = {
+            "ml_algorithms": "all",
+            "balancing_samplers": "all",
+            "mol_transformers": "all",
+            "preprocessing": None,
+            "random_state": 21,
+            "n_jobs": 1,
+            "scoring": None,
+            "select_best_by": "average",
+        }
+        attr = self.params.to_dict()
+        attr_list = []
+        for key, val in attr.items():
+            if val != defaults[key]:
+                if key in ["ml_algorithms", "balancing_samplers", "mol_transformers"]:
+                    if isinstance(val, list):
+                        sublist = []
+                        for item in val:
+                            sublist.append(item.__name__)
+                        attr_list.append(f"{key}=[{', '.join(sublist)}]")
+                elif key in ["scoring", "select_best_by"]:
+                    if isinstance(val, list):
+                        sublist = []
+                        for item in val:
+                            sublist.append(item)
+                        attr_list.append(f"{key}={sublist}")
+                else:
+                    if isinstance(val, str):
+                        attr_list.append(f"{key}='{val}'")
+                    else:
+                        attr_list.append(f"{key}={val}")
+
+        return attr_list
+
+    def __str__(self):
+        name = type(self).__name__
+        attr_list = self._get_non_default_params()
+        attr_str = ", ".join(attr_list)
+        return f"{name}({attr_str})"

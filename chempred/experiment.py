@@ -267,42 +267,6 @@ class ClassificationExplorer(BaseExplorer):
             raise ValueError("'scoring' accept as inputs lists or None")
         return scorers
 
-    def _get_non_default_params(self) -> Optional[dict]:
-        """Help to get custom attributes on defined instance to use in __str__
-
-        Returns:
-            Optional[dict]: attributes as key:value pairs if custom attributes. None is
-            returned when all attributes are set as default.
-        """
-        attr = {}
-        if self.ml_algorithms != CLASSIFIERS:
-            attr["ml_algorithms"] = [est[1] for est in self.ml_algorithms]
-        if self.balancing_samplers != SAMPLING_METHODS:
-            attr["balancing_samplers"] = [est[1] for est in self.balancing_samplers]
-        if self.mol_transformers != MOL_TRANSFORMERS:
-            attr["mol_transformers"] = [est[1] for est in self.mol_transformers]
-        if self.preprocessing is not None:
-            attr["preprocessing"] = self.preprocessing
-        if self.random_state != 21:
-            attr["random_state"] = self.random_state
-        if self.n_jobs != 1:
-            attr["n_jobs"] = self.n_jobs
-        if self.scorers != [(
-            "balanced_accuracy", SCORING.classification["balanced_accuracy"]
-        )]:
-            attr["scoring"] = [scorer[0] for scorer in self.scorers]
-
-        return attr if attr else None
-
-    def __str__(self):
-        name = type(self).__name__
-        attr = self._get_non_default_params()
-        if attr is not None:
-            attr_str = "".join([f"{key}={val}, " for key, val in attr.items()])
-        else:
-            attr_str = ""
-        return f"{name}({attr_str})"
-
 
 class RegressionExplorer(BaseExplorer):
     """Facilitate training and performance assessment of a series of automatically
@@ -509,35 +473,3 @@ class RegressionExplorer(BaseExplorer):
         else:
             raise ValueError("'scoring' accept as inputs lists or None")
         return scorers
-
-    def _get_non_default_params(self) -> Optional[dict]:
-        """Help to get custom attributes on defined instance to use in __str__
-
-        Returns:
-            Optional[dict]: attributes as key:value pairs if custom attributes. None is
-            returned when all attributes are set as default.
-        """
-        attr = {}
-        if self.ml_algorithms != REGRESSORS:
-            attr["ml_algorithms"] = [est[1] for est in self.ml_algorithms]
-        if self.mol_transformers != MOL_TRANSFORMERS:
-            attr["mol_transformers"] = [est[1] for est in self.mol_transformers]
-        if self.preprocessing is not None:
-            attr["preprocessing"] = self.preprocessing
-        if self.random_state != 21:
-            attr["random_state"] = self.random_state
-        if self.n_jobs != 1:
-            attr["n_jobs"] = self.n_jobs
-        if self.scorers != [("r2", SCORING.regression["r2"])]:
-            attr["scoring"] = [scorer[0] for scorer in self.scorers]
-
-        return attr if attr else None
-
-    def __str__(self):
-        name = type(self).__name__
-        attr = self._get_non_default_params()
-        if attr is not None:
-            attr_str = "".join([f"{key}={val}, " for key, val in attr.items()])
-        else:
-            attr_str = ""
-        return f"{name}({attr_str})"
