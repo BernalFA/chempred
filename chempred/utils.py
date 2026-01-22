@@ -16,6 +16,7 @@ def add_timing(func):
         result = func(*args, **kwargs)
         end_time = time.time()
         execution_time = end_time - start_time
-        return result.tolist() + [execution_time]
+        result.update({"Time": execution_time})
+        return result
 
     return wrapper

@@ -137,14 +137,10 @@ class ClassificationExplorer(BaseExplorer):
             y_train (npt.ArrayLike): training labels
             y_test (npt.ArrayLike): test labels
         """
-        # define columns for resulting dataframe
-        columns = ["Algorithm", "Balancing method"]
-        columns.extend([scorer[0] for scorer in self.scorers])
-        columns.append("Time")
+        results = []
         # Run iterative training and evaluation
         if self.mol_transformers is not None:
-            columns.insert(2, "Molecular Transformer")
-            results = pd.DataFrame(columns=columns)
+            # columns.insert(2, "Molecular Transformer")
             for transformer in tqdm(self.mol_transformers, desc="Overall progress"):
                 config = SimpleConfig((None, None), transformer=transformer)
                 mol_pipe = create_pipeline(config=config,
@@ -182,10 +178,14 @@ class ClassificationExplorer(BaseExplorer):
                         y_train,
                         y_test,
                     )
-                    res = [algorithm[0], sampler[0], transformer[0]] + scores
-                    results.loc[len(results)] = res
+                    res = {
+                        "Algorithm": algorithm[0],
+                        "Balancing method": sampler[0],
+                        "Molecular Transformer": transformer[0]
+                    }
+                    res.update(scores)
+                    results.append(res)
         else:
-            results = pd.DataFrame(columns=columns)
             for algorithm, sampler in product(
                 self.ml_algorithms, self.balancing_samplers, desc="Models", position=1,
                 leave=False
@@ -200,11 +200,15 @@ class ClassificationExplorer(BaseExplorer):
                 self._data_pipelines.append(pipe)
                 self._steps.append(pipe)
                 scores = self._run_evaluation(X_train, X_test, y_train, y_test)
-                res = [algorithm[0], sampler[0]] + scores
-                results.loc[len(results)] = res
+                res = {
+                    "Algorithm": algorithm[0],
+                    "Molecular Transformer": transformer[0]
+                }
+                res.update(scores)
+                results.append(res)
 
         # store results and select best performing pipeline
-        self.results_ = results
+        self.results_ = pd.DataFrame(results)
         self._select_best_pipeline()
 
     def _score_from_predictor(
@@ -226,15 +230,15 @@ class ClassificationExplorer(BaseExplorer):
             probs = estimator.predict_proba(X)[:, 1]
         except AttributeError:
             probs = estimator.decision_function(X)
-        calc_scores = []
+        calc_scores = {}
         for scorer in self.scorers:
             if scorer[0] not in ["roc_auc", "prc_auc"]:
                 value = scorer[1](y, y_pred)
             else:
                 value = scorer[1](y, probs)
-            calc_scores.append(value)
+            calc_scores[scorer[0]] = value
 
-        return np.array(calc_scores)
+        return calc_scores
 
     def _set_estimators(self):
         """Help to set all estimators from user input (attributes ml_algorithms,
@@ -443,14 +447,9 @@ class RegressionExplorer(BaseExplorer):
             y_train (npt.ArrayLike): training labels
             y_test (npt.ArrayLike): test labels
         """
-        # define columns for resulting dataframe
-        columns = ["Algorithm"]
-        columns.extend([scorer[0] for scorer in self.scorers])
-        columns.append("Time")
+        results = []
         # Run iterative training and evaluation
         if self.mol_transformers is not None:
-            columns.insert(1, "Molecular Transformer")
-            results = pd.DataFrame(columns=columns)
             for transformer in tqdm(self.mol_transformers, desc="Overall progress"):
                 config = SimpleConfig((None, None), transformer=transformer)
                 mol_pipe = create_pipeline(config=config,
@@ -485,10 +484,13 @@ class RegressionExplorer(BaseExplorer):
                         y_train,
                         y_test,
                     )
-                    res = [algorithm[0], transformer[0]] + scores
-                    results.loc[len(results)] = res
+                    res = {
+                        "Algorithm": algorithm[0],
+                        "Molecular Transformer": transformer[0]
+                    }
+                    res.update(scores)
+                    results.append(res)
         else:
-            results = pd.DataFrame(columns=columns)
             for algorithm in tqdm(
                 self.ml_algorithms, desc="Models", position=1, leave=False
             ):
@@ -500,11 +502,12 @@ class RegressionExplorer(BaseExplorer):
                 self._data_pipelines.append(pipe)
                 self._steps.append(pipe)
                 scores = self._run_evaluation(X_train, X_test, y_train, y_test)
-                res = [algorithm[0]] + scores
-                results.loc[len(results)] = res
+                res = {"Algorithm": algorithm[0]}
+                res.update(scores)
+                results.append(res)
 
         # store results and select best performing pipeline
-        self.results_ = results
+        self.results_ = pd.DataFrame(results)
         self._select_best_pipeline()
 
     def _score_from_predictor(
@@ -523,12 +526,12 @@ class RegressionExplorer(BaseExplorer):
         """
         y_pred = estimator.predict(X)
 
-        calc_scores = []
+        calc_scores = {}
         for scorer in self.scorers:
             value = scorer[1](y, y_pred)
-            calc_scores.append(value)
+            calc_scores[scorer[0]] = value
 
-        return np.array(calc_scores)
+        return calc_scores
 
     def _set_estimators(self):
         """Help to set all estimators from user input (attributes ml_algorithms

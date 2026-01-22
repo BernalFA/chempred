@@ -143,7 +143,7 @@ class BaseExplorer(ABC):
             pipe.fit(X_train, y_train)
             scores = self._score_from_predictor(pipe, X_test, y_test)
         except ValueError:
-            scores = np.full((len(self.scorers)), np.nan)
+            scores = {scorer[0]: np.nan for scorer in self.scorers}
         return scores
 
     def _create_pipeline(self, transformer: Optional[list] = None) -> Pipeline:
