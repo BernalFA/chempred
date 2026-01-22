@@ -139,8 +139,11 @@ class BaseExplorer(ABC):
             np.ndarray: performance scores on test data
         """
         pipe = self._data_pipelines[-1]
-        pipe.fit(X_train, y_train)
-        scores = self._score_from_predictor(pipe, X_test, y_test)
+        try:
+            pipe.fit(X_train, y_train)
+            scores = self._score_from_predictor(pipe, X_test, y_test)
+        except ValueError:
+            scores = np.full((len(self.scorers)), np.nan)
         return scores
 
     def _create_pipeline(self, transformer: Optional[list] = None) -> Pipeline:
