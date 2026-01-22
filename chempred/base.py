@@ -11,14 +11,7 @@ from typing import Union, Literal, Optional
 import numpy as np
 import numpy.typing as npt
 from imblearn.pipeline import Pipeline
-from scikit_mol.conversions import SmilesToMolTransformer
-from scikit_mol.standardizer import Standardizer
 from sklearn.exceptions import NotFittedError
-from sklearn.feature_selection import VarianceThreshold
-from sklearn.preprocessing import StandardScaler
-from chempred.preprocessing import (
-    RemoveCorrelated, MissingValuesRemover, RDKit2DNovartisScaler
-)
 from chempred.utils import add_timing
 
 
@@ -145,91 +138,6 @@ class BaseExplorer(ABC):
         except ValueError:
             scores = {scorer[0]: np.nan for scorer in self.scorers}
         return scores
-
-    def _create_pipeline(self, transformer: Optional[list] = None) -> Pipeline:
-        """Systematically create a transformation pipeline or a data processing and ML
-        training pipeline.
-
-        Args:
-            transformer (list | None, optional): molecular transformer to use after
-                    smiles to mol transformation and standardization. If given, it will
-                    exclusively create a pipeline for molecular transformation.
-                    Defaults to None to consider data preprocessing and modeling only.
-
-        Returns:
-            Pipeline: instantiated imblearn/sklearn pipeline
-        """
-        # if molecular transformer given, create transformer pipeline
-        if transformer is not None:
-            steps = [
-                ("SmilesToMolTransformer", SmilesToMolTransformer()),
-                ("Standardizer", Standardizer()),
-                (transformer[0], transformer[1]().set_output(transform="pandas")),
-            ]
-        # if not molecular transformer, create ML pipeline
-        else:
-            steps = [
-                (
-                    self._last_config.estimator[0],
-                    self._instantiate_estimator(self._last_config.estimator[1]),
-                )
-            ]
-            if self._last_config.sampler is not None:
-                if self._last_config.sampler[1] is not None:
-                    steps.insert(
-                        0,
-                        (
-                            self._last_config.sampler[0],
-                            self._instantiate_estimator(self._last_config.sampler[1]),
-                        ),
-                    )
-            if (self.preprocessing is not None) and self._from_descriptors:
-                preprocess = [
-                    (
-                        "MissingValuesRemover",
-                        MissingValuesRemover().set_output(transform="pandas"),
-                    ),
-                    (
-                        "VarianceThreshold",
-                        VarianceThreshold().set_output(transform="pandas")
-                    ),
-                    (
-                        "RemoveCorrelated",
-                        RemoveCorrelated().set_output(transform="pandas")
-                    ),
-                ]
-                if self.preprocessing == "StandardScaler":
-                    preprocess.append((self.preprocessing, StandardScaler()))
-                elif self.preprocessing == "NovartisScaler":
-                    preprocess.append((self.preprocessing, RDKit2DNovartisScaler()))
-                elif self.preprocessing == "NoScaler":
-                    pass
-                else:
-                    raise NotImplementedError(f"{self.preprocessing} not implemented")
-
-                steps = preprocess + steps
-
-        return Pipeline(steps=steps)
-
-    def _instantiate_estimator(self, estimator):
-        """Instantiate given estimator after setting up 'random_state' and 'n_jobs' if
-        possible (depending on whether the implementation uses them).
-
-        Args:
-            estimator: sklearn, imblearn or scikit-mol estimator
-
-        Returns:
-            instantiated estimator
-        """
-        params = {}
-        if "random_state" in estimator().get_params().keys():
-            params["random_state"] = self.random_state
-        if "n_jobs" in estimator().get_params().keys():
-            params["n_jobs"] = self.n_jobs
-        if estimator.__name__ in ["LGBMClassifier", "LGBMRegressor"]:
-            params["verbose"] = -1
-            return estimator(**params)
-        return estimator()
 
     def _get_steps(self, pipe1: Pipeline, pipe2: Pipeline) -> list[tuple]:
         """Unify steps of the pipelines for molecular transformation and data processing
