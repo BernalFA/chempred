@@ -70,15 +70,20 @@ class ClassificationExplorer(BaseExplorer):
             mol_transformers (list | 'all' | None, optional): molecular transformers
                     to include in exploration. Defaults to "all" (include all the
                     implemented transformers).
-            preprocessing ("StandardScaler" | "RDKit2DScaler" | None, optional): data
-                    preprocessing applied before training the model. Defaults to `None`.
-                    If molecular transformation to fingerprints, `preprocessing` will be
-                    ignored. `RDKit2DScaler` refers to RDKit2DNovartisScaler in the
+            preprocessing ("StandardScaler" | "NovartisScaler" | "NoScaler" | None,
+                    optional): data preprocessing applied before training the model.
+                    Defaults to `None`.
+                    If preprocessing is not None, features with missing values,
+                    highly correlated, or low variance will be removed. If molecular
+                    transformation to fingerprints, `preprocessing` will be ignored.
+                    "NovartisScaler" refers to `RDKit2DNovartisScaler` in the
                     preprocessing module. The scaler is based on Cumulative Distribution
                     Functions (CDFs) defined by Novartis some years ago and made
                     available in the `descriptastorus` package. There are CDFs for 200
                     descriptors (out of 217 in RDKit 2025). Thus, descriptors without
                     CDF in `descriptastorus` are scaled using MinMaxScaler.
+                    "StandardScaler" refers to standard scaler from sklearn.
+                    "NoScaler" means no scaling is performed.
             n_jobs (int, optional): number of cpu cores for pipeline processing (used
                     on algorithms that allows multiprocessing). Defaults to 1.
             scoring (list | None, optional): names given to the scoring functions
@@ -381,15 +386,20 @@ class RegressionExplorer(BaseExplorer):
             mol_transformers (list | 'all' | None, optional): molecular transformers
                     to include in exploration. Defaults to "all" (include all the
                     implemented transformers).
-            preprocessing ("StandardScaler" | "RDKit2DScaler" | None, optional): data
-                    preprocessing applied before training the model. Defaults to `None`.
-                    If molecular transformation to fingerprints, `preprocessing` will be
-                    ignored. `RDKit2DScaler` refers to RDKit2DNovartisScaler in the
+            preprocessing ("StandardScaler" | "NovartisScaler" | "NoScaler" | None,
+                    optional): data preprocessing applied before training the model.
+                    Defaults to `None`.
+                    If preprocessing is not None, features with missing values,
+                    highly correlated, or low variance will be removed. If molecular
+                    transformation to fingerprints, `preprocessing` will be ignored.
+                    "NovartisScaler" refers to `RDKit2DNovartisScaler` in the
                     preprocessing module. The scaler is based on Cumulative Distribution
                     Functions (CDFs) defined by Novartis some years ago and made
                     available in the `descriptastorus` package. There are CDFs for 200
                     descriptors (out of 217 in RDKit 2025). Thus, descriptors without
                     CDF in `descriptastorus` are scaled using MinMaxScaler.
+                    "StandardScaler" refers to standard scaler from sklearn.
+                    "NoScaler" means no scaling is performed.
             n_jobs (int, optional): number of cpu units for pipeline processing (used
                     on algorithms that allows multiprocessing). Defaults to 1.
             scoring (list | None, optional): names given to the scoring functions
