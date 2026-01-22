@@ -21,7 +21,7 @@ class ExplorerConfig:
     ml_algorithms: Union[list, Literal["all"]]
     balancing_samplers: Optional[Union[list, Literal["all"]]]
     mol_transformers: Optional[Union[list, Literal["all"]]]
-    preprocessing: Optional[Literal["StandardScaler", "RDKit2DScaler"]]
+    preprocessing: Optional[Literal["StandardScaler", "NovartisScaler", "NoScaler"]]
     random_state: int
     n_jobs: int
     scoring: Optional[list]

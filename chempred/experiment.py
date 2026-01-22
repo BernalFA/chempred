@@ -52,11 +52,13 @@ class ClassificationExplorer(BaseExplorer):
         ml_algorithms: Union[list, Literal["all"]] = "all",
         balancing_samplers: Optional[Union[list, Literal["all"]]] = "all",
         mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
-        preprocessing: Optional[Literal["StandardScaler", "RDKit2DScaler"]] = None,
+        preprocessing: Optional[Literal[
+            "StandardScaler", "NovartisScaler", "NoScaler"
+        ]] = None,
         random_state: int = 21,
         n_jobs: int = 1,
         scoring: Optional[list] = None,
-        select_best_by: str = "average",
+        select_best_by: Union[str, list] = "average",
     ):
         """
         Args:
@@ -287,11 +289,13 @@ class RegressionExplorer(BaseExplorer):
         self,
         ml_algorithms: Union[list, Literal["all"]] = "all",
         mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
-        preprocessing: Optional[Literal["StandardScaler", "RDKit2DScaler"]] = None,
+        preprocessing: Optional[Literal[
+            "StandardScaler", "NovartisScaler", "NoScaler"
+        ]] = None,
         random_state: int = 21,
         n_jobs: int = 1,
         scoring: Optional[list] = None,
-        select_best_by: str = "average",
+        select_best_by: Union[str, list] = "average",
     ):
         """
         Args:
