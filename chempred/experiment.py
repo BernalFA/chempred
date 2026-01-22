@@ -218,7 +218,6 @@ class ClassificationExplorer(BaseExplorer):
             probs = estimator.predict_proba(X)[:, 1]
         except AttributeError:
             probs = estimator.decision_function(X)
-
         calc_scores = []
         for scorer in self.scorers:
             if scorer[0] not in ["roc_auc", "prc_auc"]:
@@ -235,7 +234,7 @@ class ClassificationExplorer(BaseExplorer):
         """
         methods = [self.ml_algorithms, self.balancing_samplers, self.mol_transformers]
         names = ["ml_algorithms", "balancing_samplers", "mol_transformers"]
-        full_lists = [CLASSIFIERS, SAMPLING_METHODS, MOL_TRANSFORMERS]
+        full_lists = [CLASSIFIERS, SAMPLING_METHODS.copy(), MOL_TRANSFORMERS]
         for method, name, full_list in zip(methods, names, full_lists):
             if method == "all":
                 setattr(self, name, full_list)
