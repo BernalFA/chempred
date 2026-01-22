@@ -13,6 +13,7 @@ import numpy.typing as npt
 from imblearn.pipeline import Pipeline
 from sklearn.exceptions import NotFittedError
 
+from chempred.config import ExplorerConfig
 from chempred.utils import add_timing
 
 
@@ -81,11 +82,16 @@ class BaseExplorer(ABC):
                     averaged.
         """
 
-        self.ml_algorithms = ml_algorithms
-        self.random_state = random_state
-        self.mol_transformers = mol_transformers
-        self.preprocessing = preprocessing
-        self.n_jobs = n_jobs
+        self.params = ExplorerConfig(
+            ml_algorithms=ml_algorithms,
+            balancing_samplers=None,
+            mol_transformers=mol_transformers,
+            preprocessing=preprocessing,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            scoring=scoring,
+            select_best_by=select_best_by
+        )
         self._data_pipelines = []
         self._steps = []
         # self._set_estimators() TO SET UP IN SUBCLASS

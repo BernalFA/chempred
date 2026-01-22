@@ -102,7 +102,7 @@ class ClassificationExplorer(BaseExplorer):
             scoring=scoring,
             select_best_by=select_best_by
         )
-        self.balancing_samplers = balancing_samplers
+        self.params.balancing_samplers = balancing_samplers
         self._set_estimators()
 
     def evaluate(
@@ -133,14 +133,14 @@ class ClassificationExplorer(BaseExplorer):
         """
         results = []
         # Run iterative training and evaluation
-        if self.mol_transformers is not None:
+        if self.params.mol_transformers is not None:
             # columns.insert(2, "Molecular Transformer")
             for transformer in tqdm(self.mol_transformers, desc="Overall progress"):
                 config = SimpleConfig((None, None), transformer=transformer)
                 mol_pipe = create_pipeline(config=config,
                                            preprocessing=None,
-                                           random_state=self.random_state,
-                                           n_jobs=self.n_jobs,
+                                           random_state=self.params.random_state,
+                                           n_jobs=self.params.n_jobs,
                                            mol_only=True)
                 X_train_trans = mol_pipe.fit_transform(X_train)
                 X_test_trans = mol_pipe.transform(X_test)
@@ -161,9 +161,9 @@ class ClassificationExplorer(BaseExplorer):
 
                     config = SimpleConfig(algorithm, sampler)
                     pipe = create_pipeline(config=config,
-                                           preprocessing=self.preprocessing,
-                                           random_state=self.random_state,
-                                           n_jobs=self.n_jobs)
+                                           preprocessing=self.params.preprocessing,
+                                           random_state=self.params.random_state,
+                                           n_jobs=self.params.n_jobs)
                     self._data_pipelines.append(pipe)
                     self._steps.append(self._get_steps(mol_pipe, pipe))
                     scores = self._run_evaluation(
@@ -189,8 +189,8 @@ class ClassificationExplorer(BaseExplorer):
                 config = SimpleConfig(algorithm, sampler)
                 pipe = create_pipeline(config=config,
                                        preprocessing=None,
-                                       random_state=self.random_state,
-                                       n_jobs=self.n_jobs)
+                                       random_state=self.params.random_state,
+                                       n_jobs=self.params.n_jobs)
                 self._data_pipelines.append(pipe)
                 self._steps.append(pipe)
                 scores = self._run_evaluation(X_train, X_test, y_train, y_test)
@@ -209,7 +209,11 @@ class ClassificationExplorer(BaseExplorer):
         """Help to set all estimators from user input (attributes ml_algorithms,
         balancing_samplers, and mol_transformers set using required format).
         """
-        methods = [self.ml_algorithms, self.balancing_samplers, self.mol_transformers]
+        methods = [
+            self.params.ml_algorithms,
+            self.params.balancing_samplers,
+            self.params.mol_transformers
+        ]
         names = ["ml_algorithms", "balancing_samplers", "mol_transformers"]
         full_lists = [CLASSIFIERS, SAMPLING_METHODS.copy(), MOL_TRANSFORMERS]
         for method, name, full_list in zip(methods, names, full_lists):
@@ -396,13 +400,13 @@ class RegressionExplorer(BaseExplorer):
         """
         results = []
         # Run iterative training and evaluation
-        if self.mol_transformers is not None:
+        if self.params.mol_transformers is not None:
             for transformer in tqdm(self.mol_transformers, desc="Overall progress"):
                 config = SimpleConfig((None, None), transformer=transformer)
                 mol_pipe = create_pipeline(config=config,
                                            preprocessing=None,
-                                           random_state=self.random_state,
-                                           n_jobs=self.n_jobs,
+                                           random_state=self.params.random_state,
+                                           n_jobs=self.params.n_jobs,
                                            mol_only=True)
                 X_train_trans = mol_pipe.fit_transform(X_train)
                 X_test_trans = mol_pipe.transform(X_test)
@@ -420,9 +424,9 @@ class RegressionExplorer(BaseExplorer):
 
                     config = SimpleConfig(algorithm)
                     pipe = create_pipeline(config=config,
-                                           preprocessing=self.preprocessing,
-                                           random_state=self.random_state,
-                                           n_jobs=self.n_jobs)
+                                           preprocessing=self.params.preprocessing,
+                                           random_state=self.params.random_state,
+                                           n_jobs=self.params.n_jobs)
                     self._data_pipelines.append(pipe)
                     self._steps.append(self._get_steps(mol_pipe, pipe))
                     scores = self._run_evaluation(
@@ -444,8 +448,8 @@ class RegressionExplorer(BaseExplorer):
                 config = SimpleConfig(algorithm)
                 pipe = create_pipeline(config=config,
                                        preprocessing=None,
-                                       random_state=self.random_state,
-                                       n_jobs=self.n_jobs)
+                                       random_state=self.params.random_state,
+                                       n_jobs=self.params.n_jobs)
                 self._data_pipelines.append(pipe)
                 self._steps.append(pipe)
                 scores = self._run_evaluation(X_train, X_test, y_train, y_test)
@@ -461,7 +465,7 @@ class RegressionExplorer(BaseExplorer):
         """Help to set all estimators from user input (attributes ml_algorithms
         and mol_transformers set using required format).
         """
-        methods = [self.ml_algorithms, self.mol_transformers]
+        methods = [self.params.ml_algorithms, self.params.mol_transformers]
         names = ["ml_algorithms", "mol_transformers"]
         full_lists = [REGRESSORS, MOL_TRANSFORMERS]
         for method, name, full_list in zip(methods, names, full_lists):
