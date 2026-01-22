@@ -29,6 +29,7 @@ from chempred.base import BaseExplorer
 from chempred.config import (
     CLASSIFIERS, REGRESSORS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig, SCORING
 )
+from chempred.pipeline import create_pipeline
 
 
 class ClassificationExplorer(BaseExplorer):
@@ -145,7 +146,12 @@ class ClassificationExplorer(BaseExplorer):
             columns.insert(2, "Molecular Transformer")
             results = pd.DataFrame(columns=columns)
             for transformer in tqdm(self.mol_transformers, desc="Overall progress"):
-                mol_pipe = self._create_pipeline(transformer)
+                config = SimpleConfig((None, None), transformer=transformer)
+                mol_pipe = create_pipeline(config=config,
+                                           preprocessing=None,
+                                           random_state=self.random_state,
+                                           n_jobs=self.n_jobs,
+                                           mol_only=True)
                 X_train_trans = mol_pipe.fit_transform(X_train)
                 X_test_trans = mol_pipe.transform(X_test)
 
@@ -158,14 +164,16 @@ class ClassificationExplorer(BaseExplorer):
                 ):
                     if algorithm[0] == "DummyClassifier" and sampler[0] is not None:
                         continue
-                    self._last_config = SimpleConfig(algorithm, sampler, transformer)
-                    # print(self._last_config)
                     if transformer[0] != "MolecularDescriptorTransformer":
                         self._from_descriptors = False
                     else:
                         self._from_descriptors = True
 
-                    pipe = self._create_pipeline()
+                    config = SimpleConfig(algorithm, sampler)
+                    pipe = create_pipeline(config=config,
+                                           preprocessing=self.preprocessing,
+                                           random_state=self.random_state,
+                                           n_jobs=self.n_jobs)
                     self._data_pipelines.append(pipe)
                     self._steps.append(self._get_steps(mol_pipe, pipe))
                     scores = self._run_evaluation(
@@ -184,8 +192,11 @@ class ClassificationExplorer(BaseExplorer):
             ):
                 if algorithm[0] == "DummyClassifier" and sampler[0] is not None:
                     continue
-                self._last_config = SimpleConfig(algorithm, sampler)
-                pipe = self._create_pipeline()
+                config = SimpleConfig(algorithm, sampler)
+                pipe = create_pipeline(config=config,
+                                       preprocessing=None,
+                                       random_state=self.random_state,
+                                       n_jobs=self.n_jobs)
                 self._data_pipelines.append(pipe)
                 self._steps.append(pipe)
                 scores = self._run_evaluation(X_train, X_test, y_train, y_test)
@@ -195,9 +206,6 @@ class ClassificationExplorer(BaseExplorer):
         # store results and select best performing pipeline
         self.results_ = results
         self._select_best_pipeline()
-        # delete attribute '_last_config'
-        if hasattr(self, "_last_config"):
-            delattr(self, "_last_config")
 
     def _score_from_predictor(
         self, estimator: Pipeline, X: npt.ArrayLike, y: npt.ArrayLike
@@ -444,7 +452,12 @@ class RegressionExplorer(BaseExplorer):
             columns.insert(1, "Molecular Transformer")
             results = pd.DataFrame(columns=columns)
             for transformer in tqdm(self.mol_transformers, desc="Overall progress"):
-                mol_pipe = self._create_pipeline(transformer)
+                config = SimpleConfig((None, None), transformer=transformer)
+                mol_pipe = create_pipeline(config=config,
+                                           preprocessing=None,
+                                           random_state=self.random_state,
+                                           n_jobs=self.n_jobs,
+                                           mol_only=True)
                 X_train_trans = mol_pipe.fit_transform(X_train)
                 X_test_trans = mol_pipe.transform(X_test)
 
@@ -454,16 +467,16 @@ class RegressionExplorer(BaseExplorer):
                     position=1,
                     leave=False,
                 ):
-                    self._last_config = SimpleConfig(
-                        estimator=algorithm, transformer=transformer
-                    )
-                    # print(self._last_config)
                     if transformer[0] != "MolecularDescriptorTransformer":
                         self._from_descriptors = False
                     else:
                         self._from_descriptors = True
 
-                    pipe = self._create_pipeline()
+                    config = SimpleConfig(algorithm)
+                    pipe = create_pipeline(config=config,
+                                           preprocessing=self.preprocessing,
+                                           random_state=self.random_state,
+                                           n_jobs=self.n_jobs)
                     self._data_pipelines.append(pipe)
                     self._steps.append(self._get_steps(mol_pipe, pipe))
                     scores = self._run_evaluation(
@@ -479,8 +492,11 @@ class RegressionExplorer(BaseExplorer):
             for algorithm in tqdm(
                 self.ml_algorithms, desc="Models", position=1, leave=False
             ):
-                self._last_config = SimpleConfig(algorithm)
-                pipe = self._create_pipeline()
+                config = SimpleConfig(algorithm)
+                pipe = create_pipeline(config=config,
+                                       preprocessing=None,
+                                       random_state=self.random_state,
+                                       n_jobs=self.n_jobs)
                 self._data_pipelines.append(pipe)
                 self._steps.append(pipe)
                 scores = self._run_evaluation(X_train, X_test, y_train, y_test)
@@ -490,9 +506,6 @@ class RegressionExplorer(BaseExplorer):
         # store results and select best performing pipeline
         self.results_ = results
         self._select_best_pipeline()
-        # delete attribute '_last_config'
-        if hasattr(self, "_last_config"):
-            delattr(self, "_last_config")
 
     def _score_from_predictor(
         self, estimator: Pipeline, X: npt.ArrayLike, y: npt.ArrayLike
