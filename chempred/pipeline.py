@@ -25,7 +25,7 @@ def create_pipeline(
     training pipeline.
 
     Args:
-        config (SimpleConfig): pipeline configuration including estimator, balancing
+        config (SimpleConfig): minimum configuration including estimator, balancing
                                sampler, and molecular transformer.
         preprocessing (str): whether to use preprocessing, including scaling.
         random_state (int): random seed for estimator instantiation.

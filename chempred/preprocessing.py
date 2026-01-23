@@ -21,6 +21,8 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
 
     Example:
         ```python
+        from chempre.preprocessing import RemoveCorrelated
+
         remover = RemoveCorrelated(threshold=0.8)
         X_processed = remover.fit_transform(X)
         ```
@@ -29,7 +31,7 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
     def __init__(self, threshold: float = 0.8):
         """
         Args:
-            threshold (float, optional): minimum value to consider two features
+            threshold (float, optional): minimum value to consider that two features are
                                          highly correlated. Defaults to 0.8.
         """
         self.threshold = threshold
@@ -57,7 +59,7 @@ class RemoveCorrelated(SelectorMixin, BaseEstimator):
 
         return self
 
-    def get_feature_names_out(self, input_features=None):
+    def get_feature_names_out(self, input_features=None) -> npt.ArrayLike:
         return super().get_feature_names_out(input_features)
 
 
@@ -72,8 +74,8 @@ class MissingValuesRemover(SelectorMixin, BaseEstimator):
         ```
     """
 
-    def __init__(self, threshold: float = 0.2):
-        self.threshold = threshold  # For future implementation based on threshold
+    def __init__(self):
+        pass
 
     def _get_support_mask(self) -> npt.ArrayLike:
         # Check fitted as used by sklearn e.g. in VarianceThreshold class
@@ -133,7 +135,7 @@ class MissingValuesRemover(SelectorMixin, BaseEstimator):
 
         return X
 
-    def get_feature_names_out(self, input_features=None):
+    def get_feature_names_out(self, input_features=None) -> npt.ArrayLike:
         return super().get_feature_names_out(input_features)
 
 
@@ -212,7 +214,7 @@ class RDKit2DNovartisScaler(TransformerMixin, BaseEstimator):
         X = np.hstack(features)
         return X
 
-    def get_feature_names_out(self, input_features=None):
+    def get_feature_names_out(self, input_features=None) -> npt.ArrayLike:
         check_is_fitted(self)
         if input_features is None:
             input_features = self.feature_names_in_
@@ -223,9 +225,6 @@ class RDKit2DNovartisScaler(TransformerMixin, BaseEstimator):
     def _get_functions(self) -> dict:
         """Call to the CDFs defined in `rdNormalizedDescriptors` within the
         `descriptastorus.descriptors` module.
-
-        Copyright (c) 2018, Novartis Institutes for BioMedical Research Inc.
-        All rights reserved.
 
         Returns:
             dict: CDF per RDKit descriptor.

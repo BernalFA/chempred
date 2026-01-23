@@ -73,9 +73,10 @@ class ClassificationExplorer(BaseExplorer):
             preprocessing ("StandardScaler" | "NovartisScaler" | "NoScaler" | None,
                     optional): data preprocessing applied before training the model.
                     Defaults to `None`.
-                    If preprocessing is not None, features with missing values,
-                    highly correlated, or low variance will be removed. If molecular
-                    transformation to fingerprints, `preprocessing` will be ignored.
+                    If preprocessing is not `None`, features with missing values,
+                    highly correlated, or habing low variance will be removed. If
+                    molecular transformation is set to fingerprints, `preprocessing`
+                    will be ignored.
                     "NovartisScaler" refers to `RDKit2DNovartisScaler` in the
                     preprocessing module. The scaler is based on Cumulative Distribution
                     Functions (CDFs) defined by Novartis some years ago and made
@@ -87,7 +88,7 @@ class ClassificationExplorer(BaseExplorer):
             n_jobs (int, optional): number of cpu cores for pipeline processing (used
                     on algorithms that allows multiprocessing). Defaults to 1.
             scoring (list | None, optional): names given to the scoring functions
-                    used during evaluation. Defaults to None to assign default names.
+                    used during evaluation. Defaults to `None` to assign default names.
             select_best_by (str | list): mode of selection of best performing pipeline.
                     The name of a particular metrics used in `scoring` can be used.
                     Defaults to 'average', indicating that all the calculated metrics
@@ -133,7 +134,7 @@ class ClassificationExplorer(BaseExplorer):
         After evaluation is complete, the following attributes are set:
         - `results_`: pd.DataFrame summarizing the results from all the evaluated
                       pipelines.
-        - `best_estimator_`: best pipeline chosen according to `select_best_by`.
+        - `best_estimator_`: best pipeline chosen according to 'select_best_by'.
         - `best_index_`: index of the best pipeline (in `results_`).
 
         Args:
@@ -269,7 +270,7 @@ class ClassificationExplorer(BaseExplorer):
 
     def _select_best_pipeline(self):
         """Define best model from obtained performance metrics. Results are stored as
-        attributes best_index_ and best_estimator_
+        attributes `best_index_` and `best_estimator_`
         """
         exclude = ["mcc", "cohen_kappa"]
         scorers = [scorer[0] for scorer in self.scorers]
@@ -389,9 +390,10 @@ class RegressionExplorer(BaseExplorer):
             preprocessing ("StandardScaler" | "NovartisScaler" | "NoScaler" | None,
                     optional): data preprocessing applied before training the model.
                     Defaults to `None`.
-                    If preprocessing is not None, features with missing values,
-                    highly correlated, or low variance will be removed. If molecular
-                    transformation to fingerprints, `preprocessing` will be ignored.
+                    If preprocessing is not `None`, features with missing values,
+                    highly correlated, or having low variance will be removed. If
+                    molecular transformation set to fingerprints, `preprocessing` will
+                    be ignored.
                     "NovartisScaler" refers to `RDKit2DNovartisScaler` in the
                     preprocessing module. The scaler is based on Cumulative Distribution
                     Functions (CDFs) defined by Novartis some years ago and made
@@ -448,7 +450,7 @@ class RegressionExplorer(BaseExplorer):
         After evaluation is complete, the following attributes are set:
         - `results_`: pd.DataFrame summarizing the results from all the evaluated
                       pipelines.
-        - `best_estimator_`: best pipeline chosen according to `select_best_by`.
+        - `best_estimator_`: best pipeline chosen according to 'select_best_by'.
         - `best_index_`: index of the best pipeline (in `results_`).
 
         Args:
