@@ -191,7 +191,7 @@ class ClassificationExplorer(BaseExplorer):
                     continue
                 config = SimpleConfig(algorithm, sampler)
                 pipe = create_pipeline(config=config,
-                                       preprocessing=None,
+                                       preprocessing=self.params.preprocessing,
                                        random_state=self.params.random_state,
                                        n_jobs=self.params.n_jobs)
                 self._data_pipelines.append(pipe)
@@ -199,7 +199,7 @@ class ClassificationExplorer(BaseExplorer):
                 scores = self._run_evaluation(X_train, X_test, y_train, y_test)
                 res = {
                     "Algorithm": algorithm[0],
-                    "Molecular Transformer": transformer[0]
+                    "Balancing method": sampler[0],
                 }
                 res.update(scores)
                 results.append(res)
