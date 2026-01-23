@@ -13,7 +13,7 @@ import numpy.typing as npt
 from imblearn.pipeline import Pipeline
 from sklearn.exceptions import NotFittedError
 
-from chempred.config import ExplorerConfig
+from chempred.config import ExplorerConfig, MOL_TRANSFORMERS
 from chempred.utils import add_timing
 
 
@@ -92,7 +92,8 @@ class BaseExplorer(ABC):
         )
         self._data_pipelines = []
         self._steps = []
-        # self._set_estimators() TO SET UP IN SUBCLASS
+        # self._set_ml_algorithms() TO SET UP IN SUBCLASS
+        self.mol_transformers = self._set_mol_transformers()
         self.scorers = self._set_scoring_functions(scoring)
         self._select_best_by = self._check_metrics_for_selection(select_best_by)
         self._from_descriptors = False
@@ -104,14 +105,6 @@ class BaseExplorer(ABC):
         # define evaluation loop with _run_evaluation
         # store results as attribute results_
         # finally _select_best_model
-        pass
-
-    @abstractmethod
-    def _set_estimators(self):
-        """Check provided estimators or assign 'all' estimators available"""
-        # Important to set up CLASSIFIERS or REGRESSORS
-        # use _set_custom_estimators
-        # this method needs to be run at initialiation.
         pass
 
     @abstractmethod
@@ -243,6 +236,37 @@ class BaseExplorer(ABC):
         steps = self._steps[self.best_index_]
         self.best_estimator_ = Pipeline(steps)
 
+    def _set_ml_algorithms(self, available_algorithms: list) -> list:
+        """Set ML algorithms from user input.
+
+        Args:
+            available_algorithms (list): available estimators as defined in CLASSIFIERS
+                                         or REGRESSORS
+
+        Returns:
+            list: ML algorithms (name, function) to use during exploration.
+        """
+        if self.params.ml_algorithms == "all":
+            return available_algorithms
+        return self._set_custom_estimators(
+            self.params.ml_algorithms, available_algorithms
+        )
+
+    def _set_mol_transformers(self) -> list:
+        """Set molecular transformers from user input.
+
+        Returns:
+            list: transformers (name, function) to use during exploration.
+        """
+        if self.params.mol_transformers == "all":
+            return MOL_TRANSFORMERS
+        elif self.params.mol_transformers is None:
+            return None
+        else:
+            return self._set_custom_estimators(
+                self.params.mol_transformers, MOL_TRANSFORMERS
+            )
+
     def _set_custom_estimators(self, custom_methods: list, all_methods: list) -> list:
         """Iterate over custom_methods to assess whether the given estimator/method is
         implemented.
@@ -250,7 +274,7 @@ class BaseExplorer(ABC):
         Args:
             custom_methods (list): method to use in exploration
                                    (e.g. [RandomForestClassifier])
-            all_methods (list): available estimators as defined in config.py
+            all_methods (list): available estimators as defined in estimators.py
                                 (e.g. CLASSIFIERS)
 
         Raises:

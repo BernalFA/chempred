@@ -25,7 +25,7 @@ from tqdm.contrib.itertools import product
 
 from chempred.base import BaseExplorer
 from chempred.config import (
-    CLASSIFIERS, REGRESSORS, MOL_TRANSFORMERS, SAMPLING_METHODS, SimpleConfig, SCORING
+    CLASSIFIERS, REGRESSORS, SAMPLING_METHODS, SimpleConfig, SCORING
 )
 from chempred.pipeline import create_pipeline
 
@@ -105,7 +105,8 @@ class ClassificationExplorer(BaseExplorer):
             select_best_by=select_best_by
         )
         self.params.balancing_samplers = balancing_samplers
-        self._set_estimators()
+        self.ml_algorithms = self._set_ml_algorithms(CLASSIFIERS)
+        self.balancing_samplers = self._set_balancing_samplers()
 
     def evaluate(
         self,
@@ -207,31 +208,22 @@ class ClassificationExplorer(BaseExplorer):
         self.results_ = pd.DataFrame(results)
         self._select_best_pipeline()
 
-    def _set_estimators(self):
-        """Help to set all estimators from user input (attributes ml_algorithms,
-        balancing_samplers, and mol_transformers set using required format).
+    def _set_balancing_samplers(self) -> list:
+        """Set balancing samplers from user input.
+
+        Returns:
+            list: class balancing samplers (name, function) to use during exploration.
         """
-        methods = [
-            self.params.ml_algorithms,
-            self.params.balancing_samplers,
-            self.params.mol_transformers
-        ]
-        names = ["ml_algorithms", "balancing_samplers", "mol_transformers"]
-        full_lists = [CLASSIFIERS, SAMPLING_METHODS.copy(), MOL_TRANSFORMERS]
-        for method, name, full_list in zip(methods, names, full_lists):
-            if method == "all":
-                setattr(self, name, full_list)
-                if name == "balancing_samplers":
-                    attr = getattr(self, name)
-                    attr.append((None, None))
-                    setattr(self, name, attr)
-            elif method is None and name == "mol_transformers":
-                pass
-            elif method is None and name == "balancing_samplers":
-                setattr(self, name, [(None, None)])
-            else:
-                custom_list = self._set_custom_estimators(method, full_list)
-                setattr(self, name, custom_list)
+        if self.params.balancing_samplers == "all":
+            samplers = SAMPLING_METHODS.copy()
+            samplers.append((None, None))
+        elif self.params.balancing_samplers is None:
+            samplers = [(None, None)]
+        else:
+            samplers = self._set_custom_estimators(
+                self.params.balancing_samplers, SAMPLING_METHODS
+            )
+        return samplers
 
     def _set_scoring_functions(self, scoring: Optional[list]) -> list:
         """Help define the scoring functions used during model evaluation.
@@ -338,7 +330,7 @@ class RegressionExplorer(BaseExplorer):
             scoring=scoring,
             select_best_by=select_best_by
         )
-        self._set_estimators()
+        self.ml_algorithms = self._set_ml_algorithms(REGRESSORS)
 
     def evaluate(
         self,
@@ -428,22 +420,6 @@ class RegressionExplorer(BaseExplorer):
         # store results and select best performing pipeline
         self.results_ = pd.DataFrame(results)
         self._select_best_pipeline()
-
-    def _set_estimators(self):
-        """Help to set all estimators from user input (attributes ml_algorithms
-        and mol_transformers set using required format).
-        """
-        methods = [self.params.ml_algorithms, self.params.mol_transformers]
-        names = ["ml_algorithms", "mol_transformers"]
-        full_lists = [REGRESSORS, MOL_TRANSFORMERS]
-        for method, name, full_list in zip(methods, names, full_lists):
-            if method == "all":
-                setattr(self, name, full_list)
-            elif method is None and name == "mol_transformers":
-                pass
-            else:
-                custom_list = self._set_custom_estimators(method, full_list)
-                setattr(self, name, custom_list)
 
     def _set_scoring_functions(self, scoring: Optional[list]) -> list:
         """Help define the scoring functions used during model evaluation.
