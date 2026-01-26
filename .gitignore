@@ -1,7 +1,7 @@
 # Unnecessary script
 /tests/create_dataset.py
 # temporary deactivate tests
-/tests/
+/tests/*.py
 single*
 
 # Data
