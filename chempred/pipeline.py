@@ -11,15 +11,15 @@ from scikit_mol.standardizer import Standardizer
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.preprocessing import StandardScaler
 
-from chempred.config import SimpleConfig
+from chempred.config import SimpleConfig, PreprocessingConfig, ScalerType
 from chempred.preprocessing import (
     RemoveCorrelated, MissingValuesRemover, RDKit2DNovartisScaler
 )
 
 
 def create_pipeline(
-        config: SimpleConfig, preprocessing: str, random_state: int, n_jobs: int,
-        mol_only: bool = False
+        config: SimpleConfig, preprocessing: PreprocessingConfig, random_state: int,
+        n_jobs: int, mol_only: bool = False
 ) -> Pipeline:
     """Systematically create a transformation pipeline or a data processing and ML
     training pipeline.
@@ -27,7 +27,8 @@ def create_pipeline(
     Args:
         config (SimpleConfig): minimum configuration including estimator, balancing
                                sampler, and molecular transformer.
-        preprocessing (str): whether to use preprocessing, including scaling.
+        preprocessing (PreprocessingConfig): whether to use preprocessing, including
+                                             scaling.
         random_state (int): random seed for estimator instantiation.
         n_jobs (int): number of cores to use for model training.
         mol_only (bool): whether to return only molecular transformation pipeline.
@@ -52,21 +53,19 @@ def create_pipeline(
         "MissingValuesRemover",
         MissingValuesRemover().set_output(transform="pandas")
     )]
-    if preprocessing is not None:
+    if preprocessing.filtering is not None:
         preprocess.extend([
             ("VarianceThreshold",
              VarianceThreshold().set_output(transform="pandas")),
             ("RemoveCorrelated",
              RemoveCorrelated().set_output(transform="pandas")),
         ])
-        if preprocessing == "StandardScaler":
+        if preprocessing.scaler == ScalerType.STANDARD:
             preprocess.append((preprocessing, StandardScaler()))
-        elif preprocessing == "NovartisScaler":
+        elif preprocessing.scaler == ScalerType.NOVARTIS:
             preprocess.append((preprocessing, RDKit2DNovartisScaler()))
-        elif preprocessing == "NoScaler":
-            pass
         else:
-            raise NotImplementedError(f"{preprocessing} not implemented")
+            pass
 
     steps.extend(preprocess)
 

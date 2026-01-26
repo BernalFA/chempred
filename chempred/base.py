@@ -13,10 +13,8 @@ import numpy.typing as npt
 from imblearn.pipeline import Pipeline
 from sklearn.exceptions import NotFittedError
 
+from chempred.config import ExplorerConfig, MOL_TRANSFORMERS, PreprocessingConfig
 from chempred.utils import add_timing
-
-
-Preprocessing = Optional[Literal["StandardScaler", "NovartisScaler", "NoScaler"]]
 
 
 def _check_fitted(cls: Callable):
@@ -41,10 +39,13 @@ class BaseExplorer(ABC):
         self,
         ml_algorithms: Union[list, Literal["all"]] = "all",
         mol_transformers: Optional[Union[list, Literal["all"]]] = "all",
-        preprocessing: Preprocessing = None,
+        preprocessing: Optional[Literal[
+            "StandardScaler", "NovartisScaler", "NoScaler"
+        ]] = None,
         random_state: int = 21,
         n_jobs: int = 1,
         scoring: Optional[list] = None,
+        select_best_by: Union[str, list] = "average",
     ):
         """
         Args:
@@ -72,17 +73,30 @@ class BaseExplorer(ABC):
             scoring (list | None, optional): names given to the scoring functions
                     used during evaluation. Defaults to None assign scoring as balanced
                     accuracy.
+            select_best_by (str | list): mode of selection of best performing pipeline.
+                    The name of a particular metrics used in `scoring` can be used.
+                    Defaults to 'average', indicating that all the calculated metrics
+                    will be averaged and the highest average value will be used to
+                    define the best model. If a list is given, those metrics will be
+                    averaged.
         """
-
-        self.ml_algorithms = ml_algorithms
-        self.random_state = random_state
-        self.mol_transformers = mol_transformers
-        self.preprocessing = preprocessing
-        self.n_jobs = n_jobs
+        self.params = ExplorerConfig(
+            ml_algorithms=ml_algorithms,
+            balancing_samplers=None,
+            mol_transformers=mol_transformers,
+            preprocessing=preprocessing,
+            random_state=random_state,
+            n_jobs=n_jobs,
+            scoring=scoring,
+            select_best_by=select_best_by
+        )
         self._data_pipelines = []
         self._steps = []
-        # self._set_estimators() TO SET UP IN SUBCLASS
-        self.scorers = self._set_scoring_functions(scoring)
+        # self._set_ml_algorithms() TO SET UP IN SUBCLASS
+        self.mol_transformers = self._set_mol_transformers()
+        self.preprocessing = self._set_preprocessing()
+        self.scorers = self._set_scoring_functions()
+        self._select_best_by = self._check_metrics_for_selection()
         self._from_descriptors = False
 
     @abstractmethod
@@ -95,108 +109,9 @@ class BaseExplorer(ABC):
         pass
 
     @abstractmethod
-    def _score_from_predictor(self, estimator, X, y):
-        """Required implementation for performance assessment"""
-        # any number of scoring functions used. It returns results as an array
-        pass
-
-    @abstractmethod
-    def _set_estimators(self):
-        """Check provided estimators or assign 'all' estimators available"""
-        # Important to set up CLASSIFIERS or REGRESSORS
-        # use _set_custom_estimators
-        # this method needs to be run at initialiation.
-        pass
-
-    @abstractmethod
-    def _set_scoring_functions(self, scoring: Optional[list]):
+    def _set_scoring_functions(self):
         """Help define the scoring functions used during model evaluation"""
         pass
-
-    @add_timing
-    def _run_evaluation(
-        self,
-        X_train: npt.ArrayLike,
-        X_test: npt.ArrayLike,
-        y_train: npt.ArrayLike,
-        y_test: npt.ArrayLike,
-    ) -> np.ndarray:
-        """Fit pipeline on training data and calculate performance on test data.
-
-        Args:
-            X_train (npt.ArrayLike): training data or smiles
-            X_test (npt.ArrayLike): test data or smiles
-            y_train (npt.ArrayLike): training labels/target
-            y_test (npt.ArrayLike): test labels/target
-
-        Returns:
-            np.ndarray: performance scores on test data
-        """
-        pipe = self._data_pipelines[-1]
-        try:
-            pipe.fit(X_train, y_train)
-            scores = self._score_from_predictor(pipe, X_test, y_test)
-        except ValueError:
-            scores = {scorer[0]: np.nan for scorer in self.scorers}
-        return scores
-
-    def _get_steps(self, pipe1: Pipeline, pipe2: Pipeline) -> list[tuple]:
-        """Unify steps of the pipelines for molecular transformation and data processing
-        and training.
-
-        Args:
-            pipe1 (Pipeline): molecular transformation pipeline.
-            pipe2 (Pipeline): ML training pipeline.
-
-        Returns:
-            list[tuple]: full sequence of steps followed.
-        """
-        return list(pipe1.named_steps.items()) + list(pipe2.named_steps.items())
-
-    @abstractmethod
-    def _select_best_pipeline(self):
-        """Define best model from performance metrics. Results are
-        stored as the attributes best_index_ and best_estimator_
-        """
-        pass
-
-    def _set_custom_estimators(self, custom_methods: list, all_methods: list) -> list:
-        """Iterate over custom_methods to assess whether the given estimator/method is
-        implemented.
-
-        Args:
-            custom_methods (list): method to use in exploration
-                                   (e.g. [RandomForestClassifier])
-            all_methods (list): available estimators as defined in config.py
-                                (e.g. CLASSIFIERS)
-
-        Raises:
-            NotImplementedError: raise an error if any of the provided custom_methods
-                                 is not yet implemented in the Explorer.
-
-        Returns:
-            list: given estimators as tuples (name, estimator)
-        """
-        est_list = []
-        for method in custom_methods:
-            if self._check_implemented_estimator(method, all_methods):
-                est_tuple = (method.__name__, method)
-                est_list.append(est_tuple)
-            else:
-                raise NotImplementedError(f"{method=} not implemented.")
-        return est_list
-
-    @staticmethod
-    def _check_implemented_estimator(estimator, implemented_estimators):
-        """Verify estimator is included within implemented estimators in config.py
-
-        Returns:
-            bool: True if estimator is implemented
-        """
-        estimator_classes = [est[1] for est in implemented_estimators]
-        if estimator in estimator_classes:
-            return True
-        return False
 
     @property
     def best_score_(self) -> dict:
@@ -236,18 +151,171 @@ class BaseExplorer(ABC):
         """
         _check_fitted(self)
         scores = self._score_from_predictor(self.best_estimator_, X, y)
-        cols = [scorer[0] for scorer in self.scorers]
-        return {key: float(val) for key, val in zip(cols, scores)}
+        return scores
 
-    def _check_metrics_for_selection(self, metrics: Union[list, str]) -> list:
-        """Check for correctness the given method for selection of the best pipeline.
+    @add_timing
+    def _run_evaluation(
+        self,
+        X_train: npt.ArrayLike,
+        X_test: npt.ArrayLike,
+        y_train: npt.ArrayLike,
+        y_test: npt.ArrayLike,
+    ) -> np.ndarray:
+        """Fit pipeline on training data and calculate performance on test data.
 
         Args:
-            metrics (list | str): evaluation metrics used for selection of best
-                                  pipeline. If a list of metrics is given, their
-                                  average will be used to select the best pipeline.
-                                  Defaults to 'average' on all the metrics used
-                                  during evaluation.
+            X_train (npt.ArrayLike): training data or smiles
+            X_test (npt.ArrayLike): test data or smiles
+            y_train (npt.ArrayLike): training labels/target
+            y_test (npt.ArrayLike): test labels/target
+
+        Returns:
+            np.ndarray: performance scores on test data
+        """
+        pipe = self._data_pipelines[-1]
+        try:
+            pipe.fit(X_train, y_train)
+            scores = self._score_from_predictor(pipe, X_test, y_test)
+        except ValueError:
+            scores = {scorer[0]: np.nan for scorer in self.scorers}
+        return scores
+
+    def _score_from_predictor(
+        self, estimator: Pipeline, X: npt.ArrayLike, y: npt.ArrayLike
+    ) -> dict:
+        """Assess performance of given estimator on the provided dataset using selected
+        scoring metrics.
+
+        Args:
+            estimator (Pipeline): pipeline containing an ML model
+            X (npt.ArrayLike): features
+            y (npt.ArrayLike): labels
+
+        Returns:
+            dict: performance scores
+        """
+        y_pred = estimator.predict(X)
+
+        if any(scorer[0] in ["roc_auc", "prc_auc"] for scorer in self.scorers):
+            try:
+                probs = estimator.predict_proba(X)[:, 1]
+            except AttributeError:
+                probs = estimator.decision_function(X)
+
+        calc_scores = {}
+        for scorer in self.scorers:
+            if scorer[0] not in ["roc_auc", "prc_auc"]:
+                value = scorer[1](y, y_pred)
+            else:
+                value = scorer[1](y, probs)
+            calc_scores[scorer[0]] = value
+
+        return calc_scores
+
+    def _select_best_pipeline(self):
+        """Define best model from obtained performance metrics. Results are stored as
+        attributes best_index_ and best_estimator_
+        """
+        scorers = [scorer[0] for scorer in self.scorers]
+        if isinstance(self._select_best_by, str) and self._select_best_by != "average":
+            sorting_df = self.results_[self._select_best_by].copy()
+        else:
+            results = self.results_.copy()
+            cols_selection = []
+            for name in scorers:
+                if name in ["mcc", "cohen_kappa"]:
+                    results["n_" + name] = (results[name] + 1) / 2
+                    cols_selection.append("n_" + name)
+                elif name == "r2":
+                    results["1-" + name] = 1 - results[name]
+                    cols_selection.append("1-" + name)
+                else:
+                    cols_selection.append(name)
+            sorting_df = results[cols_selection].mean(axis=1)
+
+        self.best_index_ = sorting_df.sort_values(ascending=False).index[0]
+        steps = self._steps[self.best_index_]
+        self.best_estimator_ = Pipeline(steps)
+
+    def _set_ml_algorithms(self, available_algorithms: list) -> list:
+        """Set ML algorithms from user input.
+
+        Args:
+            available_algorithms (list): available estimators as defined in CLASSIFIERS
+                                         or REGRESSORS
+
+        Returns:
+            list: ML algorithms (name, function) to use during exploration.
+        """
+        if self.params.ml_algorithms == "all":
+            return available_algorithms
+        return self._set_custom_estimators(
+            self.params.ml_algorithms, available_algorithms
+        )
+
+    def _set_mol_transformers(self) -> list:
+        """Set molecular transformers from user input.
+
+        Returns:
+            list: transformers (name, function) to use during exploration.
+        """
+        if self.params.mol_transformers == "all":
+            return MOL_TRANSFORMERS
+        elif self.params.mol_transformers is None:
+            return None
+        else:
+            return self._set_custom_estimators(
+                self.params.mol_transformers, MOL_TRANSFORMERS
+            )
+
+    def _set_custom_estimators(self, custom_methods: list, all_methods: list) -> list:
+        """Iterate over custom_methods to assess whether the given estimator/method is
+        implemented.
+
+        Args:
+            custom_methods (list): method to use in exploration
+                                   (e.g. [RandomForestClassifier])
+            all_methods (list): available estimators as defined in estimators.py
+                                (e.g. CLASSIFIERS)
+
+        Raises:
+            NotImplementedError: raise an error if any of the provided custom_methods
+                                 is not yet implemented in the Explorer.
+
+        Returns:
+            list: given estimators as tuples (name, estimator)
+        """
+        est_list = []
+        for method in custom_methods:
+            if self._check_implemented_estimator(method, all_methods):
+                est_tuple = (method.__name__, method)
+                est_list.append(est_tuple)
+            else:
+                raise NotImplementedError(f"{method=} not implemented.")
+        return est_list
+
+    def _set_preprocessing(self):
+        if self.params.preprocessing is None:
+            preprocessing = PreprocessingConfig(filtering=False)
+        else:
+            preprocessing = PreprocessingConfig(filtering=True,
+                                                scaler=self.params.preprocessing)
+        return preprocessing
+
+    @staticmethod
+    def _check_implemented_estimator(estimator, implemented_estimators):
+        """Verify estimator is included within implemented estimators in config.py
+
+        Returns:
+            bool: True if estimator is implemented
+        """
+        estimator_classes = [est[1] for est in implemented_estimators]
+        if estimator in estimator_classes:
+            return True
+        return False
+
+    def _check_metrics_for_selection(self) -> list:
+        """Check for correctness the given method for selection of the best pipeline.
 
         Raises:
             ValueError: raise error if given metrics not present in the set of
@@ -257,6 +325,7 @@ class BaseExplorer(ABC):
             list: metrics
         """
         scorers = [scorer[0] for scorer in self.scorers]
+        metrics = self.params.select_best_by
         if isinstance(metrics, str):
             if metrics in scorers + ["average"]:
                 return metrics
@@ -271,3 +340,62 @@ class BaseExplorer(ABC):
             raise ValueError(
                 f"{metrics} not in agreement with selected scoring functions."
             )
+
+    def _get_steps(self, pipe1: Pipeline, pipe2: Pipeline) -> list[tuple]:
+        """Unify steps of the pipelines for molecular transformation and data processing
+        and training.
+
+        Args:
+            pipe1 (Pipeline): molecular transformation pipeline.
+            pipe2 (Pipeline): ML training pipeline.
+
+        Returns:
+            list[tuple]: full sequence of steps followed.
+        """
+        return list(pipe1.named_steps.items()) + list(pipe2.named_steps.items())
+
+    def _get_non_default_params(self) -> list:
+        """Help to get custom attributes on defined instance to use in __str__
+
+        Returns:
+            list: non-default attributes as key:value pairs in string mode.
+        """
+        defaults = {
+            "ml_algorithms": "all",
+            "balancing_samplers": "all",
+            "mol_transformers": "all",
+            "preprocessing": None,
+            "random_state": 21,
+            "n_jobs": 1,
+            "scoring": None,
+            "select_best_by": "average",
+        }
+        attr = self.params.to_dict()
+        attr_list = []
+        for key, val in attr.items():
+            if val != defaults[key]:
+                if key in ["ml_algorithms", "balancing_samplers", "mol_transformers"]:
+                    if isinstance(val, list):
+                        sublist = []
+                        for item in val:
+                            sublist.append(item.__name__)
+                        attr_list.append(f"{key}=[{', '.join(sublist)}]")
+                elif key in ["scoring", "select_best_by"]:
+                    if isinstance(val, list):
+                        sublist = []
+                        for item in val:
+                            sublist.append(item)
+                        attr_list.append(f"{key}={sublist}")
+                else:
+                    if isinstance(val, str):
+                        attr_list.append(f"{key}='{val}'")
+                    else:
+                        attr_list.append(f"{key}={val}")
+
+        return attr_list
+
+    def __str__(self):
+        name = type(self).__name__
+        attr_list = self._get_non_default_params()
+        attr_str = ", ".join(attr_list)
+        return f"{name}({attr_str})"
