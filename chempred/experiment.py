@@ -225,13 +225,8 @@ class ClassificationExplorer(BaseExplorer):
             )
         return samplers
 
-    def _set_scoring_functions(self, scoring: Optional[list]) -> list:
+    def _set_scoring_functions(self) -> list:
         """Help define the scoring functions used during model evaluation.
-
-        Args:
-            scoring (Optional[list]): names of scoring function to be used.
-                                      If None is provided, balanced_accuracy will
-                                      be used.
 
         Raises:
             ValueError: raise error if 'scoring' is not list or None.
@@ -240,6 +235,7 @@ class ClassificationExplorer(BaseExplorer):
             list: scorers (sklearn or custom scoring functions) used for performance
             evaluation.
         """
+        scoring = self.params.scoring
         if isinstance(scoring, list):
             scorers = []
             for scorer in scoring:
@@ -421,12 +417,8 @@ class RegressionExplorer(BaseExplorer):
         self.results_ = pd.DataFrame(results)
         self._select_best_pipeline()
 
-    def _set_scoring_functions(self, scoring: Optional[list]) -> list:
+    def _set_scoring_functions(self) -> list:
         """Help define the scoring functions used during model evaluation.
-
-        Args:
-            scoring (Optional[list]): names of scoring function to be used.
-                                      If None is provided, r2 will be used.
 
         Raises:
             ValueError: raise error if 'scoring' is not list or None.
@@ -435,6 +427,7 @@ class RegressionExplorer(BaseExplorer):
             list: scorers (sklearn or custom scoring functions) used for performance
             evaluation.
         """
+        scoring = self.params.scoring
         if isinstance(scoring, list):
             scorers = []
             for scorer in scoring:

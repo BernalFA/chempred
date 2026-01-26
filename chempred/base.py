@@ -95,8 +95,8 @@ class BaseExplorer(ABC):
         # self._set_ml_algorithms() TO SET UP IN SUBCLASS
         self.mol_transformers = self._set_mol_transformers()
         self.preprocessing = self._set_preprocessing()
-        self.scorers = self._set_scoring_functions(scoring)
-        self._select_best_by = self._check_metrics_for_selection(select_best_by)
+        self.scorers = self._set_scoring_functions()
+        self._select_best_by = self._check_metrics_for_selection()
         self._from_descriptors = False
 
     @abstractmethod
@@ -109,7 +109,7 @@ class BaseExplorer(ABC):
         pass
 
     @abstractmethod
-    def _set_scoring_functions(self, scoring: Optional[list]):
+    def _set_scoring_functions(self):
         """Help define the scoring functions used during model evaluation"""
         pass
 
@@ -314,15 +314,8 @@ class BaseExplorer(ABC):
             return True
         return False
 
-    def _check_metrics_for_selection(self, metrics: Union[list, str]) -> list:
+    def _check_metrics_for_selection(self) -> list:
         """Check for correctness the given method for selection of the best pipeline.
-
-        Args:
-            metrics (list | str): evaluation metrics used for selection of best
-                                  pipeline. If a list of metrics is given, their
-                                  average will be used to select the best pipeline.
-                                  Defaults to 'average' on all the metrics used
-                                  during evaluation.
 
         Raises:
             ValueError: raise error if given metrics not present in the set of
@@ -332,6 +325,7 @@ class BaseExplorer(ABC):
             list: metrics
         """
         scorers = [scorer[0] for scorer in self.scorers]
+        metrics = self.params.select_best_by
         if isinstance(metrics, str):
             if metrics in scorers + ["average"]:
                 return metrics
