@@ -1,1 +1,1 @@
-::: chempred.config.estimators.get_available_estimators
+::: chempred.config.get_available_estimators
