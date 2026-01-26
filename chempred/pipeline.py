@@ -18,8 +18,8 @@ from chempred.preprocessing import (
 
 
 def create_pipeline(
-        config: SimpleConfig, preprocessing: PreprocessingConfig, random_state: int,
-        n_jobs: int, mol_only: bool = False
+        config: SimpleConfig, preprocessing: PreprocessingConfig,
+        random_state: int = 21, n_jobs: int = 1, mol_only: bool = False
 ) -> Pipeline:
     """Systematically create a transformation pipeline or a data processing and ML
     training pipeline.
@@ -29,12 +29,10 @@ def create_pipeline(
                                sampler, and molecular transformer.
         preprocessing (PreprocessingConfig): whether to use preprocessing, including
                                              scaling.
-        random_state (int): random seed for estimator instantiation.
-        n_jobs (int): number of cores to use for model training.
+        random_state (int): random seed for estimator instantiation. Default: 21.
+        n_jobs (int): number of cores to use for model training. Default: 1.
         mol_only (bool): whether to return only molecular transformation pipeline.
-
-    Raises:
-        NotImplementedError: when a wrong preprocessing name is given.
+                         Default to False.
 
     Returns:
         Pipeline: instantiated imblearn/sklearn pipeline.
