@@ -36,6 +36,60 @@ def create_pipeline(
 
     Returns:
         Pipeline: instantiated imblearn/sklearn pipeline.
+
+    Examples:
+        This helper function can be used to create a simple pipeline for molecular
+        transformation.
+        >>> from chempred.config import SimpleConfig
+        >>> from chempred.config.estimators import MOL_TRANSFORMERS
+        >>> from chempred.pipeline import create_pipeline
+        >>> # Create pipeline with molecular transformation only
+        >>> config = SimpleConfig(
+        ...     estimator=None,
+        ...     transformer=MOL_TRANSFORMERS[0]
+        ... )
+        >>> pipe_mol = create_pipeline(
+        ...     config=config,
+        ...     preprocessing=None,
+        ...     mol_only=True
+        ... )
+        >>> print(pipe_mol)
+        Pipeline(steps=[('SmilesToMolTransformer', SmilesToMolTransformer()),
+                        ('Standardizer', Standardizer()),
+                        ('AtomPairFingerprintTransformer',
+                         AtomPairFingerprintTransformer())])
+
+        Pipelines including ML algorithms and class balancing samplers are also created
+        with this function:
+        >>> from chempred.config import SimpleConfig, PreprocessingConfig
+        >>> from chempred.config import CLASSIFIERS, SAMPLING_METHODS, MOL_TRANSFORMERS
+        >>> from chempred.pipeline import create_pipeline
+        >>> # Create full ML pipeline with sampling and scaling
+        >>> config_full = SimpleConfig(
+        ...     estimator=CLASSIFIERS[0],
+        ...     sampler=SAMPLING_METHODS[0],
+        ...     transformer=MOL_TRANSFORMERS[0]
+        ... )
+        >>> preprocessing_full = PreprocessingConfig(
+        ...     filtering=True,
+        ...     scaler="StandardScaler"
+        ... )
+        >>> pipe_full = create_pipeline(
+        ...     config=config_full,
+        ...     preprocessing=preprocessing_full,
+        ...     n_jobs=-1
+        ... )
+        >>> print(pipe_full)
+        Pipeline(steps=[('SmilesToMolTransformer', SmilesToMolTransformer()),
+                        ('Standardizer', Standardizer()),
+                        ('AtomPairFingerprintTransformer',
+                         AtomPairFingerprintTransformer()),
+                        ('MissingValuesRemover', MissingValuesRemover()),
+                        ('VarianceThreshold', VarianceThreshold()),
+                        ('RemoveCorrelated', RemoveCorrelated()),
+                        ('StandardScaler', StandardScaler()),
+                        ('ADASYN', ADASYN()),
+                        ('DecisionTreeClassifier', DecisionTreeClassifier())])
     """
     steps = []
     if config.transformer is not None:
