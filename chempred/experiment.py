@@ -45,6 +45,54 @@ class ClassificationExplorer(BaseExplorer):
     The current implementation uses default values for all the parameters in the
     considered estimators, except for `random_state` and `n_jobs`, which can be
     configured upon instance definition.
+
+    Attributes:
+        ml_algorithms (list): Classification algorithms to explore.
+        balancing_samplers (list): Class imbalance handling methods.
+        mol_transformers (list): Molecular transformation methods.
+        scorers (list): Scoring functions for performance evaluation.
+        results_ (pd.DataFrame): Results from all evaluated pipelines.
+        best_estimator_ (Pipeline): Best performing pipeline.
+        best_index_ (int): Index of best pipeline in results_.
+        best_score_ (float): Score of best pipeline.
+
+    Examples:
+        >>> from scikit_mol.fingerprints import MorganFingerprintTransformer
+        >>> from imblearn.under_sampling import RandomUnderSampler
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from chempred.experiment import ClassificationExplorer
+        >>> from chempred.utils import load_classification_data
+        >>> # Load example data (SMILES and binary labels)
+        >>> data = load_classification_data()
+        >>> data.shape
+        (1982, 2)
+        >>> # Split data into training and test sets
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     data.smiles, data.perm, test_size=0.3, random_state=21
+        ... )
+        >>> # Create explorer with specific ML algorithms and transformers
+        >>> explorer = ClassificationExplorer(
+        ...     ml_algorithms=[RandomForestClassifier, LogisticRegression],
+        ...     balancing_samplers=[RandomUnderSampler],
+        ...     mol_transformers=[MorganFingerprintTransformer],
+        ...     scoring=["balanced_accuracy", "f1", "roc_auc"],
+        ...     select_best_by="balanced_accuracy",
+        ...     random_state=21
+        ... )
+        >>> # Evaluate all the pipeline combinations
+        >>> explorer.evaluate(X_train, X_test, y_train, y_test)
+        >>> # Access results
+        >>> explorer.results_.T
+                                                       0	                           1
+               Algorithm	      RandomForestClassifier	          LogisticRegression
+        Balancing method	          RandomUnderSampler	          RandomUnderSampler
+             Transformer	MorganFingerprintTransformer	MorganFingerprintTransformer
+            balanced_acc	                    0.829873	                    0.804652
+                      f1	                    0.911929	                    0.867526
+                 roc_auc	                    0.894039	                    0.886650
+                    Time	                     5.40578	                    8.956576
     """
 
     def __init__(
@@ -271,6 +319,49 @@ class RegressionExplorer(BaseExplorer):
     The current implementation uses default values for all the parameter of the
     considered estimators, except for `random_state` and `n_jobs`, which can be
     configured upon instance definition.
+
+    Attributes:
+        ml_algorithms (list): Classification algorithms to explore.
+        mol_transformers (list): Molecular transformation methods.
+        scorers (list): Scoring functions for performance evaluation.
+        results_ (pd.DataFrame): Results from all evaluated pipelines.
+        best_estimator_ (Pipeline): Best performing pipeline.
+        best_index_ (int): Index of best pipeline in results_.
+        best_score_ (float): Score of best pipeline.
+
+    Examples:
+        >>> from scikit_mol.fingerprints import MorganFingerprintTransformer
+        >>> from sklearn.ensemble import RandomForestRegressor
+        >>> from sklearn.linear_model import LinearRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from chempred.experiment import RegressionExplorer
+        >>> from chempred.utils import load_regression_data
+        >>> # Load example data (SMILES and binary labels)
+        >>> data = load_regression_data()
+        >>> data.shape
+        (1982, 3)
+        >>> # Split data into training and test sets
+        >>> X_train, X_test, y_train, y_test = train_test_split(
+        ...     data.smiles, data.exp, test_size=0.3, random_state=21
+        ... )
+        >>> # Create explorer with specific ML algorithms and transformers
+        >>> explorer = RegressionExplorer(
+        ...     ml_algorithms=[RandomForestRegressor, LinearRegression],
+        ...     mol_transformers=[MorganFingerprintTransformer],
+        ...     scoring=["r2", "mae"],
+        ...     select_best_by="mae",
+        ...     random_state=21
+        ... )
+        >>> # Evaluate all the pipeline combinations
+        >>> explorer.evaluate(X_train, X_test, y_train, y_test)
+        >>> # Access results
+        >>> explorer.results_.T
+                                                   0	                           1
+          Algorithm            RandomForestRegressor	            LinearRegression
+        Transformer     MorganFingerprintTransformer	MorganFingerprintTransformer
+                mse                         0.922334	                    4.682964
+                mae                         0.743093	                    1.649202
+               Time                        33.791333	                   10.536614
     """
 
     def __init__(

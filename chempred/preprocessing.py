@@ -16,14 +16,23 @@ from sklearn.utils.validation import check_is_fitted, validate_data
 
 
 class RemoveCorrelated(SelectorMixin, BaseEstimator):
-    """Sklearn compatible transformer to remove highly correlated features
-    from given dataset.
+    """Sklearn compatible transformer to remove highly correlated features.
 
-    Example:
-        ```python
-        remover = RemoveCorrelated(threshold=0.8)
-        X_processed = remover.fit_transform(X)
-        ```
+    Features with absolute correlation >= threshold are iteratively removed, keeping
+    the first occurrence.
+
+    Attributes:
+        threshold (float): correlation threshold for feature removal.
+        correlations_ (np.ndarray): pairwise feature correlations.
+
+    Examples:
+        >>> import numpy as np
+        >>> from chempred.preprocessing import RemoveCorrelated
+        >>> X = np.random.randn(100, 10)
+        >>> remover = RemoveCorrelated(threshold=0.8)
+        >>> X_filtered = remover.fit_transform(X)
+        >>> X_filtered.shape[1] <= 10
+        True
     """
 
     def __init__(self, threshold: float = 0.8):
@@ -65,11 +74,21 @@ class MissingValuesRemover(SelectorMixin, BaseEstimator):
     """Sklearn compatible transformer to remove features containing missing or infinite
     values.
 
-    Example:
-        ```python
-        remover = MissingValuesRemover()
-        X_processed = remover.fit_transform(X)
-        ```
+    This transformation is useful and routinely run before model training.
+
+    Attributes:
+        is_finite (np.ndarray): boolean mask indicating finite features.
+
+    Examples:
+        >>> import numpy as np
+        >>> from chempred.preprocessing import MissingValuesRemover
+        >>> X = np.random.randn(100, 10)
+        >>> X[0, 2] = np.nan
+        >>> X[5, 7] = np.inf
+        >>> remover = MissingValuesRemover()
+        >>> X_cleaned = remover.fit_transform(X)
+        >>> X_cleaned.shape[1] < 10
+        True
     """
 
     def __init__(self, threshold: float = 0.2):
@@ -167,11 +186,26 @@ class RDKit2DNovartisScaler(TransformerMixin, BaseEstimator):
     agreement with the actual RDKit descriptor names.
     ```
 
-    Example:
-        ```python
-        scaler = RDKit2DNovartisScaler()
-        X_scaled = scaler.fit_transform(X)
-        ```
+    Attributes:
+        functions (dict): CDF functions for RDKit descriptors from `descriptastorus`.
+
+    Examples:
+        >>> import numpy as np
+        >>> import pandas as pd
+        >>> from chempred.preprocessing import RDKit2DNovartisScaler
+        >>> X = pd.DataFrame(
+        ...     np.random.randn(100, 5),
+        ...     columns=["MaxAbsEStateIndex", "MaxEStateIndex", "MinAbsEStateIndex",
+        ...              "MinEStateIndex", "ExactMolWt"]
+        ... )
+        >>> (X >= 0).all().all() and (X <= 1).all().all()
+        np.False_
+        >>> scaler = RDKit2DNovartisScaler()
+        >>> X_scaled = scaler.fit_transform(X)
+        >>> X_scaled.shape == X.shape
+        True
+        >>> (X_scaled >= 0).all().all() and (X_scaled <= 1).all().all()
+        np.True_
     """
 
     def __init__(self):
