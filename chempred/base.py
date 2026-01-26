@@ -13,7 +13,7 @@ import numpy.typing as npt
 from imblearn.pipeline import Pipeline
 from sklearn.exceptions import NotFittedError
 
-from chempred.config import ExplorerConfig, MOL_TRANSFORMERS
+from chempred.config import ExplorerConfig, MOL_TRANSFORMERS, PreprocessingConfig
 from chempred.utils import add_timing
 
 
@@ -94,6 +94,7 @@ class BaseExplorer(ABC):
         self._steps = []
         # self._set_ml_algorithms() TO SET UP IN SUBCLASS
         self.mol_transformers = self._set_mol_transformers()
+        self.preprocessing = self._set_preprocessing()
         self.scorers = self._set_scoring_functions(scoring)
         self._select_best_by = self._check_metrics_for_selection(select_best_by)
         self._from_descriptors = False
@@ -292,6 +293,14 @@ class BaseExplorer(ABC):
             else:
                 raise NotImplementedError(f"{method=} not implemented.")
         return est_list
+
+    def _set_preprocessing(self):
+        if self.params.preprocessing is None:
+            preprocessing = PreprocessingConfig(filtering=False)
+        else:
+            preprocessing = PreprocessingConfig(filtering=True,
+                                                scaler=self.params.preprocessing)
+        return preprocessing
 
     @staticmethod
     def _check_implemented_estimator(estimator, implemented_estimators):

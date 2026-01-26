@@ -5,6 +5,7 @@ transformers (as implemented in sklearn, imblearn, and scikit-mol, respectively)
 @author: Dr. Freddy A. Bernal
 """
 from dataclasses import dataclass, asdict
+from enum import Enum
 from types import MappingProxyType
 from typing import Callable, Optional, Union, Literal
 
@@ -86,3 +87,40 @@ class Scoring:
     """
     regression: MappingProxyType[str, Callable]
     classification: MappingProxyType[str, Callable]
+
+
+class ScalerType(Enum):
+    """Simple enumeration of allowed scaling methods."""
+    STANDARD = "StandardScaler"
+    NOVARTIS = "NovartisScaler"
+    NONE = "NoScaler"
+
+
+@dataclass(frozen=True)
+class PreprocessingConfig:
+    """Utility to define preprocessing method for descriptor-based exploration.
+
+    Attributes:
+        filtering (bool): whether to use feature filtering. Default to True.
+        scaler (ScalerType | str): scaling method to apply. Available options:
+                                   'StandardScaler', 'NovartisScaler', and 'NoScaler'.
+
+    Raises:
+        ValueError: when invalid preprocessing option is given.
+    """
+    filtering: bool = True
+    scaler: Optional[Union[ScalerType, str]] = None
+
+    def __post_init__(self):
+        if self.scaler is None:
+            return
+
+        if isinstance(self.scaler, str):
+            try:
+                validated_enum = ScalerType(self.scaler)
+                object.__setattr__(self, "scaler", validated_enum)
+            except ValueError:
+                allowed = [s.value for s in ScalerType]
+                raise ValueError(
+                    f"Invalid scaler '{self.scaler}'. Must be one of {allowed} or None"
+                )

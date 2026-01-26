@@ -164,7 +164,7 @@ class ClassificationExplorer(BaseExplorer):
 
                     config = SimpleConfig(algorithm, sampler)
                     pipe = create_pipeline(config=config,
-                                           preprocessing=self.params.preprocessing,
+                                           preprocessing=self.preprocessing,
                                            random_state=self.params.random_state,
                                            n_jobs=self.params.n_jobs)
                     self._data_pipelines.append(pipe)
@@ -191,7 +191,7 @@ class ClassificationExplorer(BaseExplorer):
                     continue
                 config = SimpleConfig(algorithm, sampler)
                 pipe = create_pipeline(config=config,
-                                       preprocessing=self.params.preprocessing,
+                                       preprocessing=self.preprocessing,
                                        random_state=self.params.random_state,
                                        n_jobs=self.params.n_jobs)
                 self._data_pipelines.append(pipe)
@@ -384,7 +384,7 @@ class RegressionExplorer(BaseExplorer):
 
                     config = SimpleConfig(algorithm)
                     pipe = create_pipeline(config=config,
-                                           preprocessing=self.params.preprocessing,
+                                           preprocessing=self.preprocessing,
                                            random_state=self.params.random_state,
                                            n_jobs=self.params.n_jobs)
                     self._data_pipelines.append(pipe)
@@ -408,7 +408,7 @@ class RegressionExplorer(BaseExplorer):
                 config = SimpleConfig(algorithm)
                 pipe = create_pipeline(config=config,
                                        preprocessing=None,
-                                       random_state=self.params.random_state,
+                                       random_state=self.random_state,
                                        n_jobs=self.params.n_jobs)
                 self._data_pipelines.append(pipe)
                 self._steps.append(pipe)
