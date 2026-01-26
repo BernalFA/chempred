@@ -59,9 +59,9 @@ def create_pipeline(
              RemoveCorrelated().set_output(transform="pandas")),
         ])
         if preprocessing.scaler == ScalerType.STANDARD:
-            preprocess.append((preprocessing, StandardScaler()))
+            preprocess.append((preprocessing.scaler.value, StandardScaler()))
         elif preprocessing.scaler == ScalerType.NOVARTIS:
-            preprocess.append((preprocessing, RDKit2DNovartisScaler()))
+            preprocess.append((preprocessing.scaler.value, RDKit2DNovartisScaler()))
         else:
             pass
 
