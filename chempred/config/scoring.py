@@ -37,3 +37,16 @@ SCORING = Scoring(
         "rmse": root_mean_squared_error
     })
 )
+
+
+def get_scorer_names() -> dict:
+    """Provide the names of the available scorers used for performance evaluation.
+
+    Returns:
+        dict: A dictionary with 'classification' and 'regression' keys, each containing
+              a list of scorer names.
+    """
+    return {
+        "classification": list(SCORING.classification.keys()),
+        "regression": list(SCORING.regression.keys())
+    }

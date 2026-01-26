@@ -25,7 +25,8 @@ dependencies = [
   "openpyxl",
   "tqdm",
   "lightgbm==4.6",
-  "xgboost==3.0"
+  "xgboost==3.0",
+  "descriptastorus @ git+https://github.com/bp-kelley/descriptastorus"
 ]
 
 [project.urls]

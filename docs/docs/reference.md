@@ -2,12 +2,24 @@ Reference
 ===============
 
 
-- [ClassificationExplorer](./reference/classification_explorer.md)
+- Machine Learning Explorers:
 
-- [RegressionExplorer](./reference/regression_explorer.md)
+    - [ClassificationExplorer](./reference/classification_explorer.md)
 
-- [MissingValuesRemover](./reference/missing_values_remover.md)
+    - [RegressionExplorer](./reference/regression_explorer.md)
 
-- [RemoveCorrelated](./reference/remove_correlated.md)
+- Preprocessing utilities:
 
-- [get_available_estimators](./reference/get_available_estimators.md)
+    - [MissingValuesRemover](./reference/missing_values_remover.md)
+
+    - [RemoveCorrelated](./reference/remove_correlated.md)
+
+    - [RDKit2DNovartisScaler](./reference/novartis_scaler.md)
+
+- Miscellaneous:
+
+    - [create_pipeline](./reference/create_pipeline.md)
+
+    - [get_available_estimators](./reference/get_available_estimators.md)
+
+    - [get_scorer_names](./reference/get_scorer_names.md)

@@ -31,9 +31,12 @@ nav:
           - reference/regression_explorer.md
       - Preprocessors:
           - reference/missing_values_remover.md
+          - reference/novartis_scaler.md
           - reference/remove_correlated.md
       - Utilities:
+          - reference/create_pipeline.md
           - reference/get_available_estimators.md
+          - reference/get_scorer_names.md
   - explanation.md
 
 
