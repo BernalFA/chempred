@@ -124,11 +124,11 @@ class MissingValuesRemover(SelectorMixin, BaseEstimator):
             X = X.iloc[:, self.is_finite]
         else:
             X = X[:, self.is_finite]
-        # in case of test data, check for additional missing or infinite values
-        if not np.isfinite(X).all():
-            # Remove compounds with conflicting values (NaN or Inf)
-            mask = np.isfinite(X).all(axis=1)
-            X = X[mask]
+        # # in case of test data, check for additional missing or infinite values
+        # if not np.isfinite(X).all():
+        #     # Remove compounds with conflicting values (NaN or Inf)
+        #     mask = np.isfinite(X).all(axis=1)
+        #     X = X[mask]
         return X
 
     def _check_data_validity(self, X: npt.ArrayLike) -> npt.ArrayLike:
